@@ -11,15 +11,14 @@ for (param in requiredParams) {
 }
 
 // scripts
-clip_sequences = file( "${projectDir}/bin/parse_nanostat.R", checkIfExists: true)
-merge_parsed_run = file( "${projectDir}/bin/merge_parsed_run.R", checkIfExists: true)
-parse_metrics = file( "${projectDir}/bin/parse_run_metrics.R", checkIfExists: true)
+clip_sequences = file( "${projectDir}/bin/clip_sequences.R", checkIfExists: true)
+extract_haplotype = file( "${projectDir}/bin/extract_haplotypes.R", checkIfExists: true)
 
 // STAGE CHANNELS
 if (params.all_runs) {
-    barcodes = Channel.fromPath("${params.input}/run*/fastq_pass/barcode*", type: 'dir') 
+    barcodes = Channel.fromPath("${params.input}/run*/ont_pl/barcode*/**${params.bam_pattern}", type: 'file') 
 } else {
-    barcodes = Channel.fromPath("${params.input}/fastq_pass/barcode*", type = 'dir')
+    barcodes = Channel.fromPath("${params.input}/ont_pl/barcode*/**${params.bam_pattern}", type = 'file')
 }
 barcodes_tuple = barcodes
 .map { 
@@ -37,15 +36,10 @@ Channel.fromPath("${params.input}/**/${params.sample_sheet}", type: 'file')
         sample_sheets.put("$run", sample_sheet_path)
 }
 
-run_metrics = Channel.fromPath("${params.input}/**/*.md", type: 'file')
-.map { 
-    run_metrics_path ->
-        run = ( run_metrics_path =~ /run\d*_*V*\d*/)[0]
-        tuple( run, run_metrics_path )
-}
+include {CLIP_SEQUENCES} from '../processes/clip_sequences.nf'
+include {EXTRACT_HAPLOTYPES} from '../processes/extract_haplotypes.nf'
 
-
-workflow EXTRACT_HAPLOTYPES {
+workflow EXTRACT_HAPLOTYPES_WF {
 
 
 }
