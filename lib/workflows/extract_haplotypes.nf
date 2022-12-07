@@ -47,9 +47,6 @@ workflow EXTRACT_HAPLOTYPES_WF {
 
     CLIP_SEQUENCES(bam_file_tuples, clip_sequences)
 
-    CLIP_SEQUENCES.out.fasta_clipped
-    .view()
-    
     MULTIPLE_ALIGNMENT(CLIP_SEQUENCES.out.fasta_clipped)
 
     MULTIPLE_ALIGNMENT.out.fasta_aligned
