@@ -76,7 +76,7 @@ toDNAStringSet <- function(haplotype_table){
 }
 get_sample_name <- function(barcode, sample_sheet){
   barcode_nanopore <- paste0("NB", str_sub(barcode, start = -2))
-  sample_barcode_overview <- fromJSON("~/UMI_LPA_KIV2/run12_V14/lib/Barcode_Sample_overview.js")
+  sample_barcode_overview <- fromJSON(sample_sheet)
   sample_frame <- sample_barcode_overview %>% filter(Barcode == barcode_nanopore)
   return(as.character(sample_frame["Sample"]))
 }
@@ -92,6 +92,7 @@ sequences_clipped <-
     filepath = aligned_fasta, 
     format = "fasta"
   )
+
 if(fragment == 5104){
   sequences_clipped <- remove_STR_region(sequences_clipped)
 }
