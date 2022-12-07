@@ -38,7 +38,9 @@ bam_files
         barcode = (bam_file_path =~ /barcode\d*/)[0]
         tuple ( run, barcode, bam_file_path) 
 }
+.view()
 .set { bam_file_tuples }
+
 
 include {CLIP_SEQUENCES} from '../processes/clip_sequences.nf'
 include {MULTIPLE_ALIGNMENT} from '../processes/multiple_alignment.nf'
