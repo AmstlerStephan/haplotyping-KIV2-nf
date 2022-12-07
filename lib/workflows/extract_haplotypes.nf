@@ -22,7 +22,7 @@ if (params.all_runs) {
     bam_files = Channel.fromPath("${params.input}/ont_pl/**${params.bam_pattern}", type: 'file')
 }
 sample_sheets = [:]
-Channel.fromPath("${params.input}/**${params.sample_sheet}", type: 'file')
+Channel.fromPath("${params.input}/run*/**${params.sample_sheet}", type: 'file')
 .map { 
     sample_sheet_path ->
         run = ( sample_sheet_path =~ /run\d*_*V*\d*/)[0]
