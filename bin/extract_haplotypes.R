@@ -51,8 +51,8 @@ run <- argv$run
 aligned_fasta <- argv$aligned_fasta
 variant_cutoff <- ifelse(
   str_detect(run, "V14"),
-  argv$umi_cutoff_V14,
-  argv$umi_cutoff_R9
+  as.numeric(argv$umi_cutoff_V14),
+  as.numeric(argv$umi_cutoff_R9)
 )
 
 remove_STR_region <- function(sequences){
@@ -81,9 +81,11 @@ get_sample_name <- function(barcode, sample_sheet){
   return(as.character(sample_frame["Sample"]))
 }
 
+STR_range_start <- 2450
+STR_range_end <- 2570
 sample_name <- get_sample_name(barcode, sample_sheet)
-sample <- str_sub(sample_name, end = -6)
-fragment <- str_sub(sample_name, start = -4)
+# sample <- str_sub(sample_name, end = -6)
+# fragment <- str_sub(sample_name, start = -4)
 
 sequences_clipped <- 
   readDNAStringSet(
@@ -92,8 +94,8 @@ sequences_clipped <-
   )
 
 sequences_clipped_STR_removed <- remove_STR_region(sequences_clipped)
-sequence_table <- as.data.frame(sequences_clipped_STR_removed) %>% 
-  rename(sequence = x)
+sequence_table <- as.data.frame(sequences_clipped_STR_removed)
+names(sequence_table) <- "sequence"
 n_positions <- max(str_count(sequence_table$sequence)) + 1
 clusters = row.names(sequence_table)
 n_clusters <- nrow(sequence_table)
