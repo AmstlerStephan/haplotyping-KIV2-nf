@@ -12,6 +12,7 @@ library(wordspace)
 library(data.table)
 library(argparser)
 
+parser <- arg_parser("Commandline parser")
 parser <- add_argument(
   parser,
   "--sample_sheet",
@@ -86,7 +87,7 @@ fragment <- str_sub(sample_name, start = -4)
 
 sequences_clipped <- 
   readDNAStringSet(
-    filepath = paste(input_dir, sample, "clipped_multiple_alignment.fasta", sep = "/"), 
+    filepath = aligned_fasta, 
     format = "fasta"
   )
 
@@ -128,5 +129,5 @@ sequence_table_haplotypes_unique <- sequence_table_haplotypes %>%
             positions = positions_string) %>% 
   filter(haplotype_occurences > lower_limit)
 
-writeXStringSet(toDNAStringSet(sequence_table_haplotypes_unique), paste(input_dir, sample, "haplotype.fasta", sep = "/"))
-write_tsv(sequence_table_haplotypes_unique, paste(input_dir, sample, "haplotype.tsv", sep = "/"))
+writeXStringSet(toDNAStringSet(sequence_table_haplotypes_unique), paste(sample_name, "haplotype.fasta", sep = "_"))
+write_tsv(sequence_table_haplotypes_unique, paste(sample_name, "haplotype.tsv", sep = "_"))

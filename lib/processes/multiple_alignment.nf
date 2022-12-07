@@ -1,6 +1,6 @@
 process MULTIPLE_ALIGNMENT {
-    publishDir "${params.output}/${run}/${barcode}/fasta/tree", pattern: "fasta.tree" mode: 'copy'
-    publishDir "${params.output}/${run}/${barcode}/fasta/", pattern: "fasta" mode: 'copy'
+    publishDir "${params.output}/${run}/${barcode}/fasta/tree", pattern: "fasta.tree", mode: 'copy'
+    publishDir "${params.output}/${run}/${barcode}/fasta/", pattern: "fasta", mode: 'copy'
   input:
     tuple val( run ), val( barcode ), path( fasta_clipped )
   output:
