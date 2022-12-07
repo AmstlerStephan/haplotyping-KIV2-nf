@@ -38,6 +38,7 @@ Channel.fromPath("${params.input}/**/${params.sample_sheet}", type: 'file')
 
 include {CLIP_SEQUENCES} from '../processes/clip_sequences.nf'
 include {EXTRACT_HAPLOTYPES} from '../processes/extract_haplotypes.nf'
+include {MULTIPLE_ALIGNMENT} from '../processes/multiple_alignment.nf'
 
 workflow EXTRACT_HAPLOTYPES_WF {
 

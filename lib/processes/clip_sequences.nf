@@ -5,7 +5,7 @@ process CLIP_SEQUENCES {
     path sample_sheet
     path clip_sequences_R
   output:
-    tuple val( "${run}" ), val( "${barcode}" ), path( "*clipped.fasta" ), emit: clipped_fasta
+    tuple val( "${run}" ), val( "${barcode}" ), path( "*clipped.fasta" ), emit: fasta_clipped
     path "*sequences.fasta"
   script:
   """
