@@ -12,22 +12,14 @@ for (param in requiredParams) {
 
 // scripts
 clip_sequences = file( "${projectDir}/bin/clip_sequences.R", checkIfExists: true)
-extract_haplotype = file( "${projectDir}/bin/extract_haplotypes.R", checkIfExists: true)
+extract_haplotypes = file( "${projectDir}/bin/extract_haplotypes.R", checkIfExists: true)
 
 // STAGE CHANNELS
 if (params.all_runs) {
-    barcodes = Channel.fromPath("${params.input}/run*/ont_pl/barcode*/**${params.bam_pattern}", type: 'file') 
+    bam_files = Channel.fromPath("${params.input}/run*/ont_pl/barcode*/**${params.bam_pattern}", type: 'file') 
 } else {
-    barcodes = Channel.fromPath("${params.input}/ont_pl/barcode*/**${params.bam_pattern}", type = 'file')
+    bam_files = Channel.fromPath("${params.input}/ont_pl/barcode*/**${params.bam_pattern}", type = 'file')
 }
-barcodes_tuple = barcodes
-.map { 
-    barcode_path -> 
-        run = (barcode_path =~ /run\d*_*V*\d*/)[0]
-        barcode = barcode_path.baseName
-        tuple( run, barcode, barcode_path ) 
-}
-
 sample_sheets = [:]
 Channel.fromPath("${params.input}/**/${params.sample_sheet}", type: 'file')
 .map { 
@@ -36,11 +28,30 @@ Channel.fromPath("${params.input}/**/${params.sample_sheet}", type: 'file')
         sample_sheets.put("$run", sample_sheet_path)
 }
 
+bam_files
+.map { 
+    bam_file_path -> 
+        run = (bam_file_path =~ /run\d*_*V*\d*/)[0]
+        barcode = (bam_file_path =~ /barcode\d*/)[0]
+        tuple ( run, barcode, bam_file_path) 
+}
+.set { bam_file_tuples }
+
 include {CLIP_SEQUENCES} from '../processes/clip_sequences.nf'
-include {EXTRACT_HAPLOTYPES} from '../processes/extract_haplotypes.nf'
 include {MULTIPLE_ALIGNMENT} from '../processes/multiple_alignment.nf'
+include {EXTRACT_HAPLOTYPES} from '../processes/extract_haplotypes.nf'
 
 workflow EXTRACT_HAPLOTYPES_WF {
 
+    CLIP_SEQUENCES(bam_file_tuples, clip_sequences)
+    MULTIPLE_ALIGNMENT(CLIP_SEQUENCES.out.fasta_clipped)
 
+    MULTIPLE_ALIGNMENT.out.fasta_aligned
+    .map{ run, barcode, fasta_aligned ->
+        sample_sheet = sample_sheets.get("$run")
+        tuple (run, barcode, fasta_aligned, sample_sheet )
+    }
+    .set { fasta_aligned_sample_sheet }
+
+    EXTRACT_HAPLOTYPES(fasta_aligned_sample_sheet, extract_haplotypes)
 }
