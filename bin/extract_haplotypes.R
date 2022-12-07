@@ -7,8 +7,6 @@ suppressMessages(library(DECIPHER))
 suppressMessages(library(Biostrings))
 library(Rsamtools)
 library(GenomicAlignments)
-library(qgraph)
-library(wordspace)
 library(data.table)
 library(argparser)
 
@@ -81,6 +79,10 @@ get_sample_name <- function(barcode, sample_sheet){
   return(as.character(sample_frame["Sample"]))
 }
 
+# barcode <- "barcode20"
+# sample_sheet <- "~/UMI_LPA_KIV2/run12_V14/lib/Barcode_Sample_overview.js"
+# aligned_fasta <- "~/UMI_LPA_KIV2/cladogram/barcode20/clipped_multiple_alignment.fasta"
+# variant_cutoff <- 0.005
 STR_range_start <- 2450
 STR_range_end <- 2570
 sample_name <- get_sample_name(barcode, sample_sheet)

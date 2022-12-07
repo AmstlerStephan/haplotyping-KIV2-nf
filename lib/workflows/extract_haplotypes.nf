@@ -28,7 +28,6 @@ Channel.fromPath("${params.input}/run*/**${params.sample_sheet}", type: 'file')
         run = ( sample_sheet_path =~ /run\d*_*V*\d*/)[0]
         sample_sheets.put("$run", sample_sheet_path)
 }
-.view()
 
 bam_files
 .map { 
@@ -37,7 +36,6 @@ bam_files
         barcode = (bam_file_path =~ /barcode\d*/)[0]
         tuple ( run, barcode, bam_file_path) 
 }
-.view()
 .set { bam_file_tuples }
 
 
@@ -48,6 +46,10 @@ include {EXTRACT_HAPLOTYPES} from '../processes/extract_haplotypes.nf'
 workflow EXTRACT_HAPLOTYPES_WF {
 
     CLIP_SEQUENCES(bam_file_tuples, clip_sequences)
+
+    CLIP_SEQUENCES.out.fasta_clipped
+    .view()
+    
     MULTIPLE_ALIGNMENT(CLIP_SEQUENCES.out.fasta_clipped)
 
     MULTIPLE_ALIGNMENT.out.fasta_aligned
