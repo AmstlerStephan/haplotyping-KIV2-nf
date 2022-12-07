@@ -85,16 +85,17 @@ STR_range_start <- 2450
 STR_range_end <- 2570
 sample_name <- get_sample_name(barcode, sample_sheet)
 # sample <- str_sub(sample_name, end = -6)
-# fragment <- str_sub(sample_name, start = -4)
+fragment <- as.numeric(str_sub(sample_name, start = -4))
 
 sequences_clipped <- 
   readDNAStringSet(
     filepath = aligned_fasta, 
     format = "fasta"
   )
-
-sequences_clipped_STR_removed <- remove_STR_region(sequences_clipped)
-sequence_table <- as.data.frame(sequences_clipped_STR_removed)
+if(fragment == 5104){
+  sequences_clipped <- remove_STR_region(sequences_clipped)
+}
+sequence_table <- as.data.frame(sequences_clipped)
 names(sequence_table) <- "sequence"
 n_positions <- max(str_count(sequence_table$sequence)) + 1
 clusters = row.names(sequence_table)
