@@ -20,7 +20,7 @@ if (params.all_runs) {
     .view()
 
     sample_sheets = [:]
-    Channel.fromPath("${params.input}/run*/lib/*${params.sample_sheet}", type: 'file', maxDepth: 3)
+    Channel.fromPath("${params.input}/run*/lib/*${params.sample_sheet}", type: 'file')
     .view()
     .map { 
         sample_sheet_path ->
@@ -31,7 +31,7 @@ if (params.all_runs) {
 } else {
     bam_files = Channel.fromPath("${params.input}/ont_pl/**${params.bam_pattern}", type: 'file')
     sample_sheets = [:]
-    Channel.fromPath("${params.input}/lib/*${params.sample_sheet}", type: 'file', maxDepth: 3)
+    Channel.fromPath("${params.input}/lib/*${params.sample_sheet}", type: 'file')
     .view()
     .map { 
         sample_sheet_path ->
