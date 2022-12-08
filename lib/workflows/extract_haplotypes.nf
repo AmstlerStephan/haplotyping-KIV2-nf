@@ -21,13 +21,6 @@ if (params.all_runs) {
 } else {
     bam_files = Channel.fromPath("${params.input}/ont_pl/**${params.bam_pattern}", type: 'file')
 }
-sample_sheets = [:]
-Channel.fromPath("${params.input}/**${params.sample_sheet}", type: 'file')
-.map { 
-    sample_sheet_path ->
-        run = ( sample_sheet_path =~ /run\d*_*V*\d*/)[0]
-        sample_sheets.put("$run", sample_sheet_path)
-}
 
 bam_files
 .map { 
