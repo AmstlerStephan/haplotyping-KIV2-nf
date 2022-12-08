@@ -3,7 +3,7 @@ process MULTIPLE_ALIGNMENT {
   input:
     tuple val( run ), val( barcode ), path( fasta_clipped )
   output:
-    tuple val( "${run}" ), val( "${barcode}" ), path( "multiple_alignment.fasta" ), emit: fasta_aligned
+    tuple val( "${run}" ), val( "${barcode}" ), path( "*multiple_alignment.fasta" ), emit: fasta_aligned
   script:
   """
     mafft \

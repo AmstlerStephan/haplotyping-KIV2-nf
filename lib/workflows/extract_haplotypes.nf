@@ -12,7 +12,7 @@ for (param in requiredParams) {
 
 // scripts
 clip_sequences = file( "${projectDir}/bin/clip_sequences.R", checkIfExists: true)
-extract_haplotypes = file( "${projectDir}/bin/extract_haplotypes.R", checkIfExists: true)
+extract_haplotype = file( "${projectDir}/bin/extract_haplotypes.R", checkIfExists: true)
 
 // STAGE CHANNELS
 if (params.all_runs) {
@@ -22,7 +22,7 @@ if (params.all_runs) {
     bam_files = Channel.fromPath("${params.input}/ont_pl/**${params.bam_pattern}", type: 'file')
 }
 sample_sheets = [:]
-Channel.fromPath("${params.input}/run*/**${params.sample_sheet}", type: 'file')
+Channel.fromPath("${params.input}/**${params.sample_sheet}", type: 'file')
 .map { 
     sample_sheet_path ->
         run = ( sample_sheet_path =~ /run\d*_*V*\d*/)[0]
@@ -36,6 +36,7 @@ bam_files
         barcode = (bam_file_path =~ /barcode\d*/)[0]
         tuple ( run, barcode, bam_file_path) 
 }
+.view()
 .set { bam_file_tuples }
 
 
@@ -47,14 +48,18 @@ workflow EXTRACT_HAPLOTYPES_WF {
 
     CLIP_SEQUENCES(bam_file_tuples, clip_sequences)
 
+    CLIP_SEQUENCES.out.fasta_clipped.view()
     MULTIPLE_ALIGNMENT(CLIP_SEQUENCES.out.fasta_clipped)
+
+    MULTIPLE_ALIGNMENT.out.fasta_aligned.view()
 
     MULTIPLE_ALIGNMENT.out.fasta_aligned
     .map{ run, barcode, fasta_aligned ->
         sample_sheet = sample_sheets.get("$run")
         tuple (run, barcode, fasta_aligned, sample_sheet )
     }
-    .set { fasta_aligned_sample_sheet }
+    .view()
+    .set{ fasta_aligned_sample_sheet }
 
-    EXTRACT_HAPLOTYPES(fasta_aligned_sample_sheet, extract_haplotypes)
+    EXTRACT_HAPLOTYPES(fasta_aligned_sample_sheet, extract_haplotype)
 }

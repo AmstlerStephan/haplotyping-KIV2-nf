@@ -1,8 +1,8 @@
 process EXTRACT_HAPLOTYPES {
-    publishDir "${params.output}/${run}/${barcode}/haplotype/", pattern: '*fasta', mode: 'copy'
-    publishDir "${params.output}/${run}/${barcode}/haplotype/stats", pattern: '*tsv', mode: 'copy'
+    publishDir "${params.output}/${run}/${barcode}/haplotype/", pattern: "*fasta", mode: 'copy'
+    publishDir "${params.output}/${run}/${barcode}/haplotype/stats", pattern: "*tsv", mode: 'copy'
   input:
-    tuple val( run ), val( barcode ), path( fasta_aligned ), path ( sample_sheet )
+    tuple val( run ), val( barcode ), path( fasta_aligned ), path( sample_sheet )
     path extract_haplotypes_R
   output:
     tuple val( "${run}" ), val( "${barcode}" ), path( "*haplotype.fasta" ), emit: haplotype
