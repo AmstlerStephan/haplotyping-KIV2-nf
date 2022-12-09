@@ -1,5 +1,3 @@
-suppressMessages(library(DECIPHER))
-suppressMessages(library(Biostrings))
 library(Rsamtools)
 library(GenomicAlignments)
 library(argparser)
