@@ -63,9 +63,9 @@ workflow EXTRACT_HAPLOTYPES_WF {
     CLIP_SEQUENCES(bam_file_tuples, clip_sequences)
 
     CLIP_SEQUENCES.out.fasta_clipped.
-    filter{ run, barcode, fasta_file -> fasta_file.countFasta() > params.min_reads_per_barcode}
+    filter{ run, barcode, fasta_file -> fasta_file.countFasta() > 1}
     .set { fasta_clipped_filtered }
-    
+
     MULTIPLE_ALIGNMENT(fasta_clipped_filtered)
 
     MULTIPLE_ALIGNMENT.out.fasta_aligned.view()
