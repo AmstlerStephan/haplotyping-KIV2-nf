@@ -28,7 +28,7 @@ if (params.all_runs) {
 } else {
     bam_files = Channel.fromPath("${params.input}/ont_pl/**${params.bam_pattern}", type: 'file')
     sample_sheets = [:]
-    Channel.fromPath("${params.input}/lib/*${params.sample_sheet}", type: 'file')fasta_clipped_filtered
+    Channel.fromPath("${params.input}/lib/*${params.sample_sheet}", type: 'file')
     .map { 
         sample_sheet_path ->
             run = ( sample_sheet_path =~ /run\d*_*V*\d*/)[0]
