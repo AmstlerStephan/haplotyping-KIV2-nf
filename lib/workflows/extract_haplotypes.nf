@@ -16,7 +16,7 @@ extract_haplotype = file( "${projectDir}/bin/extract_haplotypes.R", checkIfExist
 
 // STAGE CHANNELS
 if (params.all_runs) {
-    bam_files = Channel.fromPath("${params.input}/run*/ont_pl/barcode*/**${params.bam_pattern}", type: 'file')
+    bam_files = Channel.fromPath("${params.input}/run*/ont_pl_SUP/barcode*/**${params.bam_pattern}", type: 'file')
 
     sample_sheets = [:]
     Channel.fromPath("${params.input}/run*/lib/*${params.sample_sheet}", type: 'file')
