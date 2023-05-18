@@ -90,14 +90,14 @@ log.info "         ==============================================="
 log.info "         RUN NAME: ${workflow.runName}"
 log.info ""
 
-include {EXTRACT_HAPLOTYPES} from './lib/workflows/extract_haplotypes.nf'
+include {EXTRACT_HAPLOTYPES_WF} from './lib/workflows/extract_haplotypes.nf'
 
 // MAIN WORKFLOW 
 workflow {
 
     // call sub-workflows eg. WORKFLOW(Channel1, Channel2, Channel3, etc.)
     main:
-        EXTRACT_HAPLOTYPES()
+        EXTRACT_HAPLOTYPES_WF()
 
 }
 
