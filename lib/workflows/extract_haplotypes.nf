@@ -26,7 +26,7 @@ if (params.all_runs) {
             sample_sheets.put("$run", sample_sheet_path)
     }
 } else {
-    bam_files = Channel.fromPath("${params.input}/${ont_pl_dir}/**${params.bam_pattern}", type: 'file')
+    bam_files = Channel.fromPath("${params.input}/${params.ont_pl_dir}/**${params.bam_pattern}", type: 'file')
     sample_sheets = [:]
     Channel.fromPath("${params.input}/lib/*${params.sample_sheet}", type: 'file')
     .map { 
