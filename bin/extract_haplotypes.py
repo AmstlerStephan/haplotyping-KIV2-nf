@@ -2,7 +2,6 @@ import argparse
 import logging
 import os
 
-import edlib
 import pysam
 import sys
 
@@ -45,7 +44,10 @@ def parse_args(argv):
     )
     
 def extract_haplotypes(args):
-    pass
+    bam_file = args.BAM_FILE
+    
+    samfile = pysam.AlignmentFile(bam_file, "rb")
+    iter = samfile.pileup()
 
 def main(argv=sys.argv[1:]):
     """
