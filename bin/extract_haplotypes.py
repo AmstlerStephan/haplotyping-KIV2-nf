@@ -61,26 +61,46 @@ def parse_args(argv):
     )
     parser.add_argument(
         "--min_qscore",
-        dest="MIN_CLUSTER_READS",
+        dest="MIN_QSCORE",
         type=int,
         default=40,
-        help="Reads per cluster. Clusters with less reads will be discarded, clusters with more will be downsampled. 50% must be forward and 50% reverse reads",
+        help="Positions with less quality will be discarded",
+    )
+    parser.add_argument(
+        "--ranges_to_exclude",
+        dest="RANGES_TO_EXCLUDE",
+        type=ranges,
+        nargs="+",
+        help="Positions within the listed ranges will be excluded from the haplotypes",
     )
     
     args = parser.parse_args(argv)
 
     return args
 
+def ranges(query_range):
+    range = dict()
+    try:
+        start, end = map(int, query_range.split(','))
+        range["start"]=start
+        range["end"]=end
+        return range
+    except:
+        raise argparse.ArgumentTypeError("range must be start,end")
 
 def get_haplotypes(args):
     bam_file = args.BAM_FILE
     output_format = args.OUTPUT_FORMAT
     output = args.OUTPUT
+    min_qscore = args.MIN_QSCORE
+    ranges_to_exclude = args.RANGES_TO_EXCLUDE
     
+    print(ranges_to_exclude)
     query_names = get_query_names(bam_file)
     haplotypes = extract_haplotypes(bam_file, query_names)
-    filtered_haplotypes = filter_haplotypes(haplotypes, )
-    write_haplotypes(haplotypes, output_format, output)
+    write_haplotypes(haplotypes, output_format, output, "haplotypes")
+    filtered_haplotypes = filter_haplotypes(haplotypes, min_qscore, ranges_to_exclude)
+    write_haplotypes(filtered_haplotypes, output_format, output, "haplotypes_filtered")
 
 def get_query_names(bam_file):
     query_names = dict()
@@ -123,37 +143,46 @@ def extract_haplotypes(bam_file, query_names):
 
 
 def filter_haplotypes(haplotypes, min_qscore, regions_to_exlude):
- for haplotype_name in haplotypes:
-        positions = get_string(haplotypes[haplotype_name].get("haplotype"))
+    filtered_haplotypes = list()
+    for haplotype_name in haplotypes:
+        positions = haplotypes[haplotype_name].get("position")
+        haplotype = haplotypes[haplotype_name].get("haplotype")
+        qualities = haplotypes[haplotype_name].get("quality")
+
         for i, pos in enumerate(positions):
-            if 
-            
+            for range in regions_to_exlude:
+                exclude = pos > range["start"] & pos < range["end"]
+            if exclude:
+                positions.pop(i)
+                haplotype.pop(i)
+                qualities.pop(i)
+                    
     return filtered_haplotypes
             
-def write_haplotypes(haplotypes, output_format, output):
-    haplotype_file = os.path.join(output, "haplotypes.{}".format(output_format))
+def write_haplotypes(haplotypes, output_format, output, file_name):
+    haplotype_file = os.path.join(output, "{}.{}".format(file_name, output_format))
     with open(haplotype_file, "w") as out_f:
         for haplotype_name in haplotypes:
             sequence = get_string(haplotypes[haplotype_name].get("haplotype"))
-            
+            positions = get_string(haplotypes[haplotype_name].get("position"))
             if output_format == "fastq":
                 qualities = get_string(haplotypes[haplotype_name].get("quality"))
-                write_fastq_read(haplotype_name, sequence, qualities, out_f)
+                write_fastq_read(haplotype_name, positions, sequence, qualities, out_f)
             else:
-                write_fasta_read(haplotype_name, sequence, out_f) 
+                write_fasta_read(haplotype_name, positions, sequence, out_f) 
                 
-def write_fastq_read(read_name, read_seq, read_qual, out_f):
-    print("@{}".format(read_name), file=out_f)
+def write_fastq_read(read_name, positions, read_seq, read_qual, out_f):
+    print("@{},positions={}".format(read_name, positions), file=out_f)
     print("{}".format(read_seq), file=out_f)
     print("+", file=out_f)
     print("{}".format(read_qual), file=out_f)
 
-def write_fasta_read(read_name, read_seq, out_f):
-    print(">{}".format(read_name), file=out_f)
+def write_fasta_read(read_name, positions, read_seq, out_f):
+    print(">{},positions={}".format(read_name, positions,), file=out_f)
     print("{}".format(read_seq), file=out_f)
 
 def get_string(list_to_convert):
-    return "".join(list_to_convert)
+    return "".join(map(str, list_to_convert))
 
 def main(argv=sys.argv[1:]):
     """
