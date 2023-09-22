@@ -141,6 +141,7 @@ def get_extracted_haplotypes(bam_file, query_names):
                     read_pos = pileup_read.query_position
                     name = read.query_name  
                     
+                    # in case of indel a list is returned and joined with the existing list
                     if pileup_read.indel > 0:
                         indel_length = pileup_read.indel
                         base = read.query_sequence[read_pos:read_pos + indel_length]
@@ -149,7 +150,7 @@ def get_extracted_haplotypes(bam_file, query_names):
                         query_names[name]["quality"].extend(qual)
                         query_names[name]["position"].extend([pos] * indel_length)
                         continue
-                    
+                    # deletion is annotated as - and qual set to 70 (might adjust)
                     if pileup_read.is_del:
                         base = "-"
                         qual = 70
@@ -193,7 +194,7 @@ def write_haplotypes(haplotypes, output_format, output, file_name):
                 qualities = get_string(haplotypes[haplotype_name].get("quality"), "")
                 write_fastq_read(haplotype_name, positions, sequence, qualities, out_f)
             else:
-                write_fasta_read(haplotype_name, positions, sequence, out_f) 
+                write_fasta_read(haplotype_name, positions, sequence, out_f)
                 
 def write_fastq_read(read_name, positions, read_seq, read_qual, out_f):
     # print("@{},positions={}".format(read_name, positions), file=out_f)
