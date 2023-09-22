@@ -57,7 +57,17 @@ def parse_args(argv):
         help="Output folder"
     )
     parser.add_argument(
-        "--filter_haplotypes", dest="FILTER", action="store_true", help="Filter Haplotypes"
+        "--filter_haplotypes", 
+        dest="FILTER_HAPLOTYPES", 
+        default=True,
+        action="store_true", 
+        help="Filter Haplotypes"
+    )
+    parser.add_argument(
+        "--hardmask", 
+        dest="HARDMASK", 
+        action="store_true", 
+        help="Hardmask low quality bases"
     )
     parser.add_argument(
         "--min_qscore",
@@ -70,6 +80,7 @@ def parse_args(argv):
         "--ranges_to_exclude",
         dest="RANGES_TO_EXCLUDE",
         type=ranges,
+        default=[{"start":0, "end":0}],
         nargs="+",
         help="Positions within the listed ranges will be excluded from the haplotypes",
     )
@@ -94,12 +105,16 @@ def get_haplotypes(args):
     output = args.OUTPUT
     min_qscore = args.MIN_QSCORE
     ranges_to_exclude = args.RANGES_TO_EXCLUDE
+    hardmask = args.HARDMASK
+    filter_haplotypes = args.FILTER_HAPLOTYPES
     
     query_names = get_query_names(bam_file)
-    haplotypes = extract_haplotypes(bam_file, query_names)
+    haplotypes = get_extracted_haplotypes(bam_file, query_names)
     write_haplotypes(haplotypes, output_format, output, "haplotypes")
-    filtered_haplotypes = filter_haplotypes(haplotypes, min_qscore, ranges_to_exclude)
-    write_haplotypes(filtered_haplotypes, output_format, output, "haplotypes_filtered")
+    
+    if filter_haplotypes:
+        filtered_haplotypes = get_filtered_haplotypes(haplotypes, min_qscore, ranges_to_exclude, hardmask)
+        write_haplotypes(filtered_haplotypes, output_format, output, "haplotypes_filtered")
 
 def get_query_names(bam_file):
     query_names = dict()
@@ -111,7 +126,7 @@ def get_query_names(bam_file):
                 quality = list())
     return query_names
 
-def extract_haplotypes(bam_file, query_names):
+def get_extracted_haplotypes(bam_file, query_names):
     
     with pysam.AlignmentFile(bam_file, "rb") as samfile:
         # truncate = True truncates overlapping reads to positions which are aligned to the ref
@@ -136,7 +151,7 @@ def extract_haplotypes(bam_file, query_names):
                         continue
                     
                     if pileup_read.is_del:
-                        base = "D"
+                        base = "-"
                         qual = 70
                     else:
                         base = read.query_sequence[read_pos]
@@ -148,20 +163,23 @@ def extract_haplotypes(bam_file, query_names):
     return query_names
 
 
-def filter_haplotypes(haplotypes, min_qscore, regions_to_exlude):
+def get_filtered_haplotypes(haplotypes, min_qscore, regions_to_exclude, hardmask):
     for haplotype_name in haplotypes:
         positions = haplotypes[haplotype_name].get("position").copy()
         for pos in positions:
             i = haplotypes[haplotype_name].get("position").index(pos)
             qual = haplotypes[haplotype_name].get("quality")[i]
-            if exclude_pos(pos, regions_to_exlude):
+            if exclude_pos(pos, regions_to_exclude):
                 haplotypes[haplotype_name].get("position").pop(i)
                 haplotypes[haplotype_name].get("haplotype").pop(i)
                 haplotypes[haplotype_name].get("quality").pop(i)
             elif qual < min_qscore:
-                base = haplotypes[haplotype_name].get("haplotype")[i]
-                masked_base = base.lower()
-                haplotypes[haplotype_name].get("haplotype")[i] = masked_base
+                if hardmask:
+                    haplotypes[haplotype_name].get("haplotype")[i] = "-"
+                else:
+                    base = haplotypes[haplotype_name].get("haplotype")[i]
+                    masked_base = base.lower()
+                    haplotypes[haplotype_name].get("haplotype")[i] = masked_base
                 
     return haplotypes
             
@@ -178,13 +196,15 @@ def write_haplotypes(haplotypes, output_format, output, file_name):
                 write_fasta_read(haplotype_name, positions, sequence, out_f) 
                 
 def write_fastq_read(read_name, positions, read_seq, read_qual, out_f):
-    print("@{},positions={}".format(read_name, positions), file=out_f)
+    # print("@{},positions={}".format(read_name, positions), file=out_f)
+    print("@{}".format(read_name), file=out_f)
     print("{}".format(read_seq), file=out_f)
     print("+", file=out_f)
     print("{}".format(read_qual), file=out_f)
 
 def write_fasta_read(read_name, positions, read_seq, out_f):
-    print(">{},positions={}".format(read_name, positions,), file=out_f)
+    # print(">{},positions={}".format(read_name, positions,), file=out_f)
+    print(">{}".format(read_name), file=out_f)
     print("{}".format(read_seq), file=out_f)
 
 def get_string(list_to_convert, sep):
