@@ -95,8 +95,6 @@ def get_merged_sequences(unique_sequences):
         sequences_to_remove.clear()
     return unique_sequences
 
-
-
 def get_unique_sequences(fasta_file):
     unique_sequences = dict()
     with pysam.FastxFile(fasta_file) as reads:
