@@ -82,7 +82,7 @@ remove_STR_region <- function(sequences){
   if( min_STR_start > 0 & max_STR_end > 0){
     STR_IRange <- IRanges(start = min_STR_start, end = max_STR_end)
     sequences_STR_removed <- replaceAt(sequences, STR_IRange)
-    return (sequences_STR_removed)
+    return (sequences_STR_removed)  
   }
   return(sequences)
   
