@@ -95,7 +95,6 @@ def get_haplotypes(args):
     min_qscore = args.MIN_QSCORE
     ranges_to_exclude = args.RANGES_TO_EXCLUDE
     
-    print(ranges_to_exclude)
     query_names = get_query_names(bam_file)
     haplotypes = extract_haplotypes(bam_file, query_names)
     write_haplotypes(haplotypes, output_format, output, "haplotypes")
@@ -125,17 +124,24 @@ def extract_haplotypes(bam_file, query_names):
                 for pileup_read in pileup_column.pileups:
                     read = pileup_read.alignment
                     read_pos = pileup_read.query_position
+                    name = read.query_name  
+                    
+                    if pileup_read.indel > 0:
+                        indel_length = pileup_read.indel
+                        base = read.query_sequence[read_pos:read_pos + indel_length]
+                        qual = read.query_qualities[read_pos:read_pos + indel_length]
+                        query_names[name]["haplotype"].extend(base) 
+                        query_names[name]["quality"].extend(qual)
+                        query_names[name]["position"].extend([pos] * indel_length)
+                        continue
+                    
                     if pileup_read.is_del:
                         base = "D"
                         qual = 70
-                    elif( pileup_read.indel > 0):
-                        base = read.query_sequence[read_pos:read_pos + pileup_read.indel]
-                        qual = read.query_qualities[read_pos:read_pos + pileup_read.indel]
                     else:
                         base = read.query_sequence[read_pos]
                         qual = read.query_qualities[read_pos]
                     
-                    name = read.query_name  
                     query_names[name]["haplotype"].append(base) 
                     query_names[name]["quality"].append(qual) 
                     query_names[name]["position"].append(pos)
@@ -143,30 +149,30 @@ def extract_haplotypes(bam_file, query_names):
 
 
 def filter_haplotypes(haplotypes, min_qscore, regions_to_exlude):
-    filtered_haplotypes = list()
     for haplotype_name in haplotypes:
-        positions = haplotypes[haplotype_name].get("position")
-        haplotype = haplotypes[haplotype_name].get("haplotype")
-        qualities = haplotypes[haplotype_name].get("quality")
-
-        for i, pos in enumerate(positions):
-            for range in regions_to_exlude:
-                exclude = pos > range["start"] & pos < range["end"]
-            if exclude:
-                positions.pop(i)
-                haplotype.pop(i)
-                qualities.pop(i)
-                    
-    return filtered_haplotypes
+        positions = haplotypes[haplotype_name].get("position").copy()
+        for pos in positions:
+            i = haplotypes[haplotype_name].get("position").index(pos)
+            qual = haplotypes[haplotype_name].get("quality")[i]
+            if exclude_pos(pos, regions_to_exlude):
+                haplotypes[haplotype_name].get("position").pop(i)
+                haplotypes[haplotype_name].get("haplotype").pop(i)
+                haplotypes[haplotype_name].get("quality").pop(i)
+            elif qual < min_qscore:
+                base = haplotypes[haplotype_name].get("haplotype")[i]
+                masked_base = base.lower()
+                haplotypes[haplotype_name].get("haplotype")[i] = masked_base
+                
+    return haplotypes
             
 def write_haplotypes(haplotypes, output_format, output, file_name):
     haplotype_file = os.path.join(output, "{}.{}".format(file_name, output_format))
     with open(haplotype_file, "w") as out_f:
         for haplotype_name in haplotypes:
-            sequence = get_string(haplotypes[haplotype_name].get("haplotype"))
-            positions = get_string(haplotypes[haplotype_name].get("position"))
+            sequence = get_string(haplotypes[haplotype_name].get("haplotype"), "")
+            positions = get_string(haplotypes[haplotype_name].get("position"), " ")
             if output_format == "fastq":
-                qualities = get_string(haplotypes[haplotype_name].get("quality"))
+                qualities = get_string(haplotypes[haplotype_name].get("quality"), "")
                 write_fastq_read(haplotype_name, positions, sequence, qualities, out_f)
             else:
                 write_fasta_read(haplotype_name, positions, sequence, out_f) 
@@ -181,8 +187,14 @@ def write_fasta_read(read_name, positions, read_seq, out_f):
     print(">{},positions={}".format(read_name, positions,), file=out_f)
     print("{}".format(read_seq), file=out_f)
 
-def get_string(list_to_convert):
-    return "".join(map(str, list_to_convert))
+def get_string(list_to_convert, sep):
+    return sep.join(map(str, list_to_convert))
+
+def exclude_pos(pos, regions_to_exclude):
+    exclude = False
+    for range in regions_to_exclude:
+        exclude = pos > range["start"] and pos < range["end"] or exclude
+    return exclude
 
 def main(argv=sys.argv[1:]):
     """
