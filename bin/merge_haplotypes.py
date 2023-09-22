@@ -68,13 +68,15 @@ def get_merged_haplotypes(args):
     output = args.OUTPUT
     
     unique_sequences = get_unique_sequences(fasta_file)
-    # write_haplotypes(unique_sequences, output_format, output, "unique_haplotypes")
-    # write_subreads(unique_sequences, output_format, output, "unique_haplotypes_subreads")
-    get_merged_sequences(unique_sequences)
+    write_haplotypes(unique_sequences, output_format, output, "unique_haplotypes")
+    write_subreads(unique_sequences, output_format, output, "unique_haplotypes_subreads")
+    merged_sequences = get_merged_sequences(unique_sequences)
+    write_haplotypes(merged_sequences, output_format, output, "merged_haplotypes")
 
 def get_merged_sequences(unique_sequences):
-    queries = dict()
-    for sequence in unique_sequences:
+    sequences_to_remove = list()
+    unique_sequences_copy = unique_sequences.copy()
+    for sequence in unique_sequences_copy:
         for query_sequence in unique_sequences:
             if not unique_sequences[query_sequence]["high_qual"] and len(unique_sequences[query_sequence]) < 3:
                 result = edlib.align(
@@ -84,16 +86,16 @@ def get_merged_sequences(unique_sequences):
                     task="location",
                     k=1
                 )
-                edist = result["editDistance"]
                 if result["editDistance"] > 0:
-                    loc = result["locations"][0][1]
-                    print(loc)
-                    if sequence in queries:
-                        queries[sequence].update({ query_sequence : result["editDistance"]})
-                    else:
-                        queries[sequence] = { query_sequence : result["editDistance"] }
-        # if sequence in queries:
-        #     print("{} number of queries {}".format(sequence, len(queries[sequence])))
+                    sequences_to_remove.append(query_sequence)
+        
+        for sequence in sequences_to_remove:
+            unique_sequences[sequence] = Merge(unique_sequences[sequence], unique_sequences[query_sequence])
+            unique_sequences.pop(sequence)
+        sequences_to_remove.clear()
+    return unique_sequences
+
+
 
 def get_unique_sequences(fasta_file):
     unique_sequences = dict()
@@ -141,6 +143,11 @@ def write_fasta_read(read_name, read_seq, out_f):
     print(">{}".format(read_name), file=out_f)
     print("{}".format(read_seq), file=out_f)
 
+# Python code to merge dict using a single
+# expression
+def Merge(dict1, dict2):
+    res = {**dict1, **dict2}
+    return res
 
 def main(argv=sys.argv[1:]):
     """
