@@ -193,7 +193,6 @@ def write_haplotypes(haplotypes, output_format, output, file_name):
     with open(haplotype_file, "w") as out_f:
         for haplotype_name in haplotypes:
             sequence = get_string(haplotypes[haplotype_name].get("haplotype"), "")
-            positions = get_string(haplotypes[haplotype_name].get("position"), " ")
             if output_format == "fastq":
                 qualities = get_string(haplotypes[haplotype_name].get("quality"), "")
                 write_fastq_read(haplotype_name, sequence, qualities, out_f)
