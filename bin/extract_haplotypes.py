@@ -111,6 +111,7 @@ def get_haplotypes(args):
     query_names = get_query_names(bam_file)
     haplotypes = get_extracted_haplotypes(bam_file, query_names)
     write_haplotypes(haplotypes, output_format, output, "haplotypes")
+    write_stat_file(haplotypes, output, "haplotype_stats")
     
     if filter_haplotypes:
         filtered_haplotypes = get_filtered_haplotypes(haplotypes, min_qscore, ranges_to_exclude, hardmask)
@@ -146,10 +147,13 @@ def get_extracted_haplotypes(bam_file, query_names):
                         indel_length = pileup_read.indel
                         base = read.query_sequence[read_pos:read_pos + indel_length]
                         qual = read.query_qualities[read_pos:read_pos + indel_length]
-                        query_names[name]["haplotype"].extend(base) 
-                        query_names[name]["quality"].extend(qual)
-                        query_names[name]["position"].extend([pos] * indel_length)
+                        query_names[name]["haplotype"].append(base)
+                        # take min qual of the inserted bases
+                        query_names[name]["quality"].append(min(qual))
+                        # query_names[name]["position"].append([pos] * indel_length)
+                        query_names[name]["position"].append(pos)
                         continue
+                    
                     # deletion is annotated as - and qual set to 70 (might adjust)
                     if pileup_read.is_del:
                         base = "-"
@@ -195,7 +199,33 @@ def write_haplotypes(haplotypes, output_format, output, file_name):
                 write_fastq_read(haplotype_name, positions, sequence, qualities, out_f)
             else:
                 write_fasta_read(haplotype_name, positions, sequence, out_f)
-                
+
+def write_stat_file(haplotypes, output, file_name):
+    haplotype_file = os.path.join(output, "{}.tsv".format(file_name))
+    stats = get_stats(haplotypes)
+    with open(haplotype_file, "w") as out_f:
+        print("pos\tbase\tcount", file=out_f)
+        for pos in stats:
+            for base in stats[pos]:
+                print("{}\t{}\t{}".format(pos, base, stats[pos][base]), file=out_f)
+            
+def get_stats(haplotypes):
+    position_stats = dict()
+    for haplotype_name in haplotypes:
+        for i, pos in enumerate(haplotypes[haplotype_name]["position"]):
+            base = haplotypes[haplotype_name]["haplotype"][i]
+            # print(base)
+            # print(pos)
+            if pos not in position_stats:
+                position_stats[pos] = { base : 1 }
+            if base not in position_stats: 
+                position_stats[pos] = { base : 1}
+            else:
+                count = position_stats[pos][base]
+                count+=1
+                position_stats[pos][base] = count
+    return position_stats
+    
 def write_fastq_read(read_name, positions, read_seq, read_qual, out_f):
     # print("@{},positions={}".format(read_name, positions), file=out_f)
     print("@{}".format(read_name), file=out_f)
