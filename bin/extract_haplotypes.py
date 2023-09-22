@@ -196,9 +196,9 @@ def write_haplotypes(haplotypes, output_format, output, file_name):
             positions = get_string(haplotypes[haplotype_name].get("position"), " ")
             if output_format == "fastq":
                 qualities = get_string(haplotypes[haplotype_name].get("quality"), "")
-                write_fastq_read(haplotype_name, positions, sequence, qualities, out_f)
+                write_fastq_read(haplotype_name, sequence, qualities, out_f)
             else:
-                write_fasta_read(haplotype_name, positions, sequence, out_f)
+                write_fasta_read(haplotype_name, sequence, out_f)
 
 def write_stat_file(haplotypes, output, file_name):
     haplotype_file = os.path.join(output, "{}.tsv".format(file_name))
@@ -212,29 +212,26 @@ def write_stat_file(haplotypes, output, file_name):
 def get_stats(haplotypes):
     position_stats = dict()
     for haplotype_name in haplotypes:
+        # loop over every position of each haplotype
         for i, pos in enumerate(haplotypes[haplotype_name]["position"]):
-            base = haplotypes[haplotype_name]["haplotype"][i]
-            # print(base)
-            # print(pos)
+            base = str(haplotypes[haplotype_name]["haplotype"][i])
             if pos not in position_stats:
                 position_stats[pos] = { base : 1 }
-            if base not in position_stats: 
-                position_stats[pos] = { base : 1}
+            if base not in position_stats[pos]:
+                position_stats[pos][base] = 1
             else:
                 count = position_stats[pos][base]
                 count+=1
                 position_stats[pos][base] = count
     return position_stats
     
-def write_fastq_read(read_name, positions, read_seq, read_qual, out_f):
-    # print("@{},positions={}".format(read_name, positions), file=out_f)
+def write_fastq_read(read_name, read_seq, read_qual, out_f):
     print("@{}".format(read_name), file=out_f)
     print("{}".format(read_seq), file=out_f)
     print("+", file=out_f)
     print("{}".format(read_qual), file=out_f)
 
-def write_fasta_read(read_name, positions, read_seq, out_f):
-    # print(">{},positions={}".format(read_name, positions,), file=out_f)
+def write_fasta_read(read_name, read_seq, out_f):
     print(">{}".format(read_name), file=out_f)
     print("{}".format(read_seq), file=out_f)
 
