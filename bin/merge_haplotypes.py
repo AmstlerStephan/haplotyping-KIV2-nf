@@ -100,9 +100,9 @@ def get_merged_sequences(unique_sequences, variant_cutoff):
                 if result["editDistance"] > 0:
                     sequences_to_remove.append(query_sequence)
         
-        for sequence in sequences_to_remove:
-            unique_sequences[sequence] = Merge(unique_sequences[sequence], unique_sequences[query_sequence])
-            unique_sequences.pop(query_sequence)
+        for sequence_to_remove in sequences_to_remove:
+            unique_sequences[sequence_to_remove] = Merge(unique_sequences[sequence_to_remove], unique_sequences[sequence_to_remove])
+            unique_sequences.pop(sequence_to_remove)
         sequences_to_remove.clear()
     return unique_sequences
 
