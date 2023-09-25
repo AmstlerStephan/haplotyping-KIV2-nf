@@ -141,7 +141,7 @@ def write_haplotypes(haplotypes, output_format, output, file_name):
             name = "{},size={},high_qual={}".format(i, len(haplotypes[sequence]), haplotypes[sequence]["high_qual"])
             write_fasta_read(name, sequence, out_f) 
 
-def write_fastq_read(read_name, positions, read_seq, read_qual, out_f):
+def write_fastq_read(read_name, read_seq, read_qual, out_f):
     # print("@{},positions={}".format(read_name, positions), file=out_f)
     print("@{}".format(read_name), file=out_f)
     print("{}".format(read_seq), file=out_f)

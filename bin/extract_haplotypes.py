@@ -134,7 +134,7 @@ def get_extracted_haplotypes(bam_file, query_names):
         # loop over columns of bam_file
         for pileup_column in samfile.pileup(truncate = True):
             # check for polymorphic position
-            if len(set(pileup_column.get_query_sequences(add_indels = True))) > 1:
+            if is_polymorphic_position(pileup_column):
                 pos = pileup_column.reference_pos
             # loop over reads per column
                 for pileup_read in pileup_column.pileups:
@@ -143,14 +143,12 @@ def get_extracted_haplotypes(bam_file, query_names):
                     name = read.query_name  
                     
                     # in case of indel a list is returned and joined with the existing list
-                    if pileup_read.indel > 0:
+                    if pileup_read.indel >= 1:
                         indel_length = pileup_read.indel
-                        base = read.query_sequence[read_pos:read_pos + indel_length]
-                        qual = read.query_qualities[read_pos:read_pos + indel_length]
-                        query_names[name]["haplotype"].append(base)
-                        # take min qual of the inserted bases
-                        query_names[name]["quality"].append(min(qual))
-                        # query_names[name]["position"].append([pos] * indel_length)
+                        bases = read.query_sequence[read_pos:read_pos + indel_length]
+                        quals = read.query_qualities[read_pos:read_pos + indel_length]
+                        query_names[name]["haplotype"].append(bases)
+                        query_names[name]["quality"].append(quals)
                         query_names[name]["position"].append(pos)
                         continue
                     
@@ -174,17 +172,20 @@ def get_filtered_haplotypes(haplotypes, min_qscore, regions_to_exclude, hardmask
         for pos in positions:
             i = haplotypes[haplotype_name].get("position").index(pos)
             qual = haplotypes[haplotype_name].get("quality")[i]
+            if not isinstance(qual, int):
+                qual = min(qual)
+            
             if exclude_pos(pos, regions_to_exclude):
-                haplotypes[haplotype_name].get("position").pop(i)
-                haplotypes[haplotype_name].get("haplotype").pop(i)
-                haplotypes[haplotype_name].get("quality").pop(i)
+                haplotypes[haplotype_name]["position"].pop(i)
+                haplotypes[haplotype_name]["haplotype"].pop(i)
+                haplotypes[haplotype_name]["quality"].pop(i)
             elif qual < min_qscore:
                 if hardmask:
-                    haplotypes[haplotype_name].get("haplotype")[i] = "-"
+                    haplotypes[haplotype_name]["haplotype"][i] = "-"
                 else:
-                    base = haplotypes[haplotype_name].get("haplotype")[i]
+                    base = haplotypes[haplotype_name]["haplotype"][i]
                     masked_base = base.lower()
-                    haplotypes[haplotype_name].get("haplotype")[i] = masked_base
+                    haplotypes[haplotype_name]["haplotype"][i] = masked_base
                 
     return haplotypes
             
@@ -242,6 +243,9 @@ def exclude_pos(pos, regions_to_exclude):
     for range in regions_to_exclude:
         exclude = pos > range["start"] and pos < range["end"] or exclude
     return exclude
+
+def is_polymorphic_position(pileup_column):
+    return len(set(pileup_column.get_query_sequences(add_indels = True))) > 1
 
 def main(argv=sys.argv[1:]):
     """

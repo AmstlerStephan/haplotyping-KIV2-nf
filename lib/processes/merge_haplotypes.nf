@@ -4,8 +4,8 @@ process MERGE_HAPLOTYPES {
     tuple val( sample ), path( fastx_file )
     path merge_haplotypes_py
   output:
-    tuple val( "${sample}" ), path( "*merged_haplotypes.${output_format}" ), emit: merged_haplotypes
-    path "*${output_format}"
+    tuple val( "${sample}" ), path( "*merged_haplotypes.${params.output_format}" ), emit: merged_haplotypes
+    path "*${params.output_format}"
     
   script:
   """
