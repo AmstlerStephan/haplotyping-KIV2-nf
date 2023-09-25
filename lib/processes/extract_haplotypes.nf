@@ -1,12 +1,12 @@
 process EXTRACT_HAPLOTYPES {
-    publishDir "${params.output}/${run}/${barcode}/stats/", mode: 'copy', pattern: "*.tsv"
-    publishDir "${params.output}/${run}/${barcode}/haplotyping/", mode: 'copy', pattern: "*${params.output_format}"
+    publishDir "${params.output}/${run}/${sample}/stats/", mode: 'copy', pattern: "*.tsv"
+    publishDir "${params.output}/${run}/${sample}/haplotyping/", mode: 'copy', pattern: "*${params.output_format}"
 
   input:
-    tuple val( run ), val( barcode ), path( bam_file )
+    tuple val( run ), val( sample ), path( bam_file )
     path extract_haplotypes_py
   output:
-    tuple val( "${run}" ), val( "${barcode}" ), path( "haplotypes_filtered.${params.output_format}" ), emit: extracted_haplotypes
+    tuple val( "${run}" ), val( "${sample}" ), path( "haplotypes_filtered.${params.output_format}" ), emit: extracted_haplotypes
     path "*tsv"
     path "${params.output_format}"
   script:

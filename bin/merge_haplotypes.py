@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import math
 
 import pysam
 import sys
@@ -51,6 +52,13 @@ def parse_args(argv):
         help="Output format of the haplotypes"
     )
     parser.add_argument(
+        "--variant_cutoff",
+        dest="VARIANT_CUTOFF",
+        type=float,
+        default=0.0085,
+        help="Cutoff to merge clusters",
+    )
+    parser.add_argument(
         "-o", 
         "--output", 
         dest="OUTPUT",
@@ -62,23 +70,26 @@ def parse_args(argv):
 
     return args
 
+
 def get_merged_haplotypes(args):
     fasta_file = args.FASTX_FILE
     output_format = args.OUTPUT_FORMAT
     output = args.OUTPUT
+    variant_cutoff = args.VARIANT_CUTOFF
     
     unique_sequences = get_unique_sequences(fasta_file)
     write_haplotypes(unique_sequences, output_format, output, "unique_haplotypes")
     write_subreads(unique_sequences, output_format, output, "unique_haplotypes_subreads")
-    merged_sequences = get_merged_sequences(unique_sequences)
+    merged_sequences = get_merged_sequences(unique_sequences, variant_cutoff)
     write_haplotypes(merged_sequences, output_format, output, "merged_haplotypes")
 
-def get_merged_sequences(unique_sequences):
+def get_merged_sequences(unique_sequences, variant_cutoff):
+    cluster_cutoff = math.ceil(variant_cutoff * len(unique_sequences))
     sequences_to_remove = list()
     unique_sequences_copy = unique_sequences.copy()
     for sequence in unique_sequences_copy:
         for query_sequence in unique_sequences:
-            if not unique_sequences[query_sequence]["high_qual"] and len(unique_sequences[query_sequence]) < 3:
+            if not unique_sequences[query_sequence]["high_qual"] and len(unique_sequences[query_sequence]) <= cluster_cutoff:
                 result = edlib.align(
                     sequence, 
                     query_sequence, 
@@ -97,6 +108,7 @@ def get_merged_sequences(unique_sequences):
 
 def get_unique_sequences(fasta_file):
     unique_sequences = dict()
+    
     with pysam.FastxFile(fasta_file) as reads:
         for read in reads:
             unmasked_sequence = read.sequence.upper()
@@ -107,7 +119,7 @@ def get_unique_sequences(fasta_file):
                 unique_sequences[unmasked_sequence] = {read.name : read.sequence}
                 
             unique_sequences[unmasked_sequence].update({ "high_qual" : contains_lower})
-    return unique_sequences        
+    return unique_sequences
 
 def write_subreads(unique_reads, output_format, output, file_name):
     offset = 0

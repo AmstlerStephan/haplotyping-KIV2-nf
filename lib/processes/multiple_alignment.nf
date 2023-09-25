@@ -1,9 +1,9 @@
 process MULTIPLE_ALIGNMENT {
-    publishDir "${params.output}/${run}/${barcode}/fasta/", mode: 'copy'
+    publishDir "${params.output}/${run}/${sample}/fasta/", mode: 'copy'
   input:
-    tuple val( run ), val( barcode ), path( fasta_clipped )
+    tuple val( run ), val( sample ), path( fasta_clipped )
   output:
-    tuple val( "${run}" ), val( "${barcode}" ), path( "*multiple_alignment.fasta" ), emit: fasta_aligned
+    tuple val( "${run}" ), val( "${sample}" ), path( "*multiple_alignment.fasta" ), emit: fasta_aligned
   script:
   """
     mafft \
