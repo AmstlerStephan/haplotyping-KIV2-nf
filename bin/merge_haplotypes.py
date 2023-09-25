@@ -2,9 +2,10 @@ import argparse
 import logging
 import os
 import math
+import re
+import sys
 
 import pysam
-import sys
 import edlib
 
 def parse_args(argv):
@@ -76,35 +77,73 @@ def get_merged_haplotypes(args):
     output_format = args.OUTPUT_FORMAT
     output = args.OUTPUT
     variant_cutoff = args.VARIANT_CUTOFF
+    queries_left = True
+    max_dist = 1
+    stats_file_name = "merged_haplotype_stats"
+    stats_file_path = os.path.join(output, "{}.tsv".format(stats_file_name))
+    with open(stats_file_path, "w") as stats_file:
+        print("sequence\tquery_sequence\tquery_size\tedist\tposition\tbase\tquery_base\tchange\tmax_dist\tcluster_cutoff\tvariant_cutoff\tn_unique_sequences", file = stats_file)
     
     unique_sequences = get_unique_sequences(fasta_file)
     write_haplotypes(unique_sequences, output_format, output, "unique_haplotypes")
     write_subreads(unique_sequences, output_format, output, "unique_haplotypes_subreads")
-    merged_sequences = get_merged_sequences(unique_sequences, variant_cutoff)
+    while queries_left | max_dist < 100:
+        merged_sequences, queries_left = get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path)
+        max_dist += 1
     write_haplotypes(merged_sequences, output_format, output, "merged_haplotypes")
 
-def get_merged_sequences(unique_sequences, variant_cutoff):
-    cluster_cutoff = math.ceil(variant_cutoff * len(unique_sequences))
+def get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
+    n_unique_sequences = len(unique_sequences)
+    cluster_cutoff = math.ceil(variant_cutoff * n_unique_sequences)
     sequences_to_remove = list()
     unique_sequences_copy = unique_sequences.copy()
+    queries_left = False
     for sequence in unique_sequences_copy:
         for query_sequence in unique_sequences:
-            if not unique_sequences[query_sequence]["high_qual"] and len(unique_sequences[query_sequence]) <= cluster_cutoff:
+            n_queries = len(unique_sequences[query_sequence])
+            if not unique_sequences[query_sequence]["high_qual"] and n_queries <= cluster_cutoff:
                 result = edlib.align(
                     sequence, 
                     query_sequence, 
-                    mode="HW", 
-                    task="location",
-                    k=1
+                    mode="NW", 
+                    task="path",
+                    k=max_dist
                 )
                 if result["editDistance"] > 0:
+                    queries_left = True
                     sequences_to_remove.append(query_sequence)
+                    write_merge_log(sequence, query_sequence, n_queries, result, max_dist, cluster_cutoff, variant_cutoff, n_unique_sequences, stats_file_path)
         
         for sequence_to_remove in sequences_to_remove:
             unique_sequences[sequence_to_remove] = Merge(unique_sequences[sequence_to_remove], unique_sequences[sequence_to_remove])
             unique_sequences.pop(sequence_to_remove)
         sequences_to_remove.clear()
-    return unique_sequences
+    return unique_sequences, queries_left
+
+def write_merge_log(sequence, query_sequence, n_queries, result, max_dist, cluster_cutoff, variant_cutoff, n_unique_sequences, stats_file_path):
+    edist = result["editDistance"]
+    cigar = result["cigar"]
+    with open(stats_file_path, "a+") as stats_file:
+        for difference in re.findall('\d*=..', cigar):
+            change = difference.split("=")[1]
+            n_bases = int(re.findall("\d*", change)[0])
+            pos = int(difference.split("=")[0])
+            base = sequence[pos:pos+n_bases]
+            query_base = query_sequence[pos:pos+n_bases]
+            print("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(
+                sequence, 
+                query_sequence,
+                n_queries,
+                edist,
+                pos,
+                base,
+                query_base,
+                change,
+                max_dist,
+                cluster_cutoff,
+                variant_cutoff,
+                n_unique_sequences),
+                  file = stats_file)
 
 def get_unique_sequences(fasta_file):
     unique_sequences = dict()

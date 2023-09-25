@@ -252,6 +252,7 @@ def get_quality(qual):
     if not isinstance(qual, int):
         qual = min(qual)
     return qual
+
 def exclude_pos(pos, regions_to_exclude):
     exclude = False
     for range in regions_to_exclude:
