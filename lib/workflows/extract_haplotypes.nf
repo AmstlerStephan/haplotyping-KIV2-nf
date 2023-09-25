@@ -15,8 +15,8 @@ extract_haplotypes_py = file( "${projectDir}/bin/extract_haplotypes.py", checkIf
 merge_haplotypes_py = file( "${projectDir}/bin/merge_haplotypes.py", checkIfExists: true)
 
 // STAGE CHANNELS
-bam_file_paths = Channel.fromPath("${params.input}/barcode*/**${params.bam_pattern}", type: "file")
-bam_file_index_paths = Channel.fromPath("${params.input}/barcode*/**${params.bam_pattern}.bai", type: "file")
+bam_file_paths = Channel.fromPath("${params.input}/barcode*/align/**${params.bam_pattern}", type: "file")
+bam_file_index_paths = Channel.fromPath("${params.input}/barcode*/align/**${params.bam_pattern}.bai", type: "file")
 
 bam_files = bam_file_paths
 .map { 
