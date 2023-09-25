@@ -171,9 +171,7 @@ def get_filtered_haplotypes(haplotypes, min_qscore, regions_to_exclude, hardmask
         positions = haplotypes[haplotype_name].get("position").copy()
         for pos in positions:
             i = haplotypes[haplotype_name].get("position").index(pos)
-            qual = haplotypes[haplotype_name].get("quality")[i]
-            if not isinstance(qual, int):
-                qual = min(qual)
+            qual = get_quality(haplotypes[haplotype_name].get("quality")[i])
             
             if exclude_pos(pos, regions_to_exclude):
                 haplotypes[haplotype_name]["position"].pop(i)
@@ -181,7 +179,7 @@ def get_filtered_haplotypes(haplotypes, min_qscore, regions_to_exclude, hardmask
                 haplotypes[haplotype_name]["quality"].pop(i)
             elif qual < min_qscore:
                 if hardmask:
-                    haplotypes[haplotype_name]["haplotype"][i] = "-"
+                    haplotypes[haplotype_name]["haplotype"][i] = "N"
                 else:
                     base = haplotypes[haplotype_name]["haplotype"][i]
                     masked_base = base.lower()
@@ -195,7 +193,7 @@ def write_haplotypes(haplotypes, output_format, output, file_name):
         for haplotype_name in haplotypes:
             sequence = get_string(haplotypes[haplotype_name].get("haplotype"), "")
             if output_format == "fastq":
-                qualities = get_string(haplotypes[haplotype_name].get("quality"), "")
+                qualities = get_quality_string(haplotypes[haplotype_name].get("quality"), "")
                 write_fastq_read(haplotype_name, sequence, qualities, out_f)
             else:
                 write_fasta_read(haplotype_name, sequence, out_f)
@@ -238,6 +236,22 @@ def write_fasta_read(read_name, read_seq, out_f):
 def get_string(list_to_convert, sep):
     return sep.join(map(str, list_to_convert))
 
+def get_quality_string(qualities, sep):
+    qualities_parsed = list()
+    for qual in qualities:
+        if not isinstance(qual, int):
+            for indel_qual in qual:
+                qualities_parsed.append(chr(indel_qual + 33))
+            continue
+        else:
+            qualities_parsed.append(chr(qual + 33))
+                    
+    return get_string(qualities_parsed, sep) 
+
+def get_quality(qual):
+    if not isinstance(qual, int):
+        qual = min(qual)
+    return qual
 def exclude_pos(pos, regions_to_exclude):
     exclude = False
     for range in regions_to_exclude:
