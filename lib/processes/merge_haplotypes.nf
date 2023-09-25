@@ -1,6 +1,6 @@
 process MERGE_HAPLOTYPES {
     publishDir "${params.output}/${sample}/haplotyping/", pattern: "${params.output_format}", mode: 'copy'
-    publishDir "${params.output}/${sample}/haplotyping/", pattern: "*tsv", mode: 'copy'
+    publishDir "${params.output}/${sample}/stats/", pattern: "*tsv", mode: 'copy'
     
   input:
     tuple val( sample ), path( fastx_file )
