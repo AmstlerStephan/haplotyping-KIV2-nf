@@ -102,7 +102,7 @@ def get_merged_sequences(unique_sequences, variant_cutoff):
         
         for sequence in sequences_to_remove:
             unique_sequences[sequence] = Merge(unique_sequences[sequence], unique_sequences[query_sequence])
-            unique_sequences.pop(sequence)
+            unique_sequences.pop(query_sequence)
         sequences_to_remove.clear()
     return unique_sequences
 
