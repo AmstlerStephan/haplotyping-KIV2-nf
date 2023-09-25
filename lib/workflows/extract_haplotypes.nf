@@ -40,7 +40,4 @@ workflow EXTRACT_HAPLOTYPES_WF {
     MERGE_HAPLOTYPES(extract_haplotypes_filtered, merge_haplotypes_py)
 
     MULTIPLE_ALIGNMENT(MERGE_HAPLOTYPES.out.merged_haplotypes)
-    
-
-    EXTRACT_HAPLOTYPES(fasta_aligned_sample_sheet, extract_haplotype)
 }

@@ -1,8 +1,6 @@
 [![Nextflow](https://img.shields.io/badge/nextflow-20.07.1-brightgreen.svg)](https://www.nextflow.io/)
-[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/)
-[![Docker](https://img.shields.io/docker/automated/ecseq/dnaseq.svg)](https://hub.docker.com/r/ecseq/dnaseq)
 
-umi-pipeline-nf Pipeline
+haplotyping-KIV2-nf Pipeline
 ======================
 
 **haplotyping-KIV2-nf** is a workflow tool to run tasks across multiple compute infrastructures in a very portable manner.
