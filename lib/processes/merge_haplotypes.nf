@@ -1,15 +1,18 @@
 process EXTRACT_HAPLOTYPES {
-    publishDir "${params.output}/${run}/${sample}/haplotype/", pattern: "*fasta", mode: 'copy'
-    publishDir "${params.output}/${run}/${sample}/haplotype/stats", pattern: "*tsv", mode: 'copy'
+    publishDir "${params.output}/${sample}/haplotyping/", mode: 'copy'
   input:
     tuple val( sample ), path( fastx_file )
     path merge_haplotypes_py
   output:
-    tuple val( "${run}" ), val( "${sample}" ), path( "*haplotype.fasta" ), emit: haplotype
-    path "*haplotype.tsv"
+    tuple val( "${sample}" ), path( "*merged_haplotypes.${output_format}" ), emit: haplotype
+    path "*${output_format}"
+    
   script:
   """
-    Rscript ${merge_haplotypes_py} \
-    --fastx_file ${fastx_file}
-      """
+    python ${merge_haplotypes_py} \
+      --fastx_file ${fastx_file} \
+      --variant_cutoff ${params.variant_cutoff} \
+      --output_format ${params.output_format} \
+      -o ./
+    """
 }
