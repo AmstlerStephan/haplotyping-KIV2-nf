@@ -1,7 +1,7 @@
 nextflow.enable.dsl = 2
 
 requiredParams = [
-    'input', 'all_runs', 'output'
+    'input', 'output'
 ]
 
 for (param in requiredParams) {
@@ -11,65 +11,36 @@ for (param in requiredParams) {
 }
 
 // scripts
-clip_sequences = file( "${projectDir}/bin/clip_sequences.R", checkIfExists: true)
-extract_haplotype = file( "${projectDir}/bin/extract_haplotypes.R", checkIfExists: true)
+extract_haplotypes_py = file( "${projectDir}/bin/extract_haplotypes.py", checkIfExists: true)
+merge_haplotypes_py = file( "${projectDir}/bin/merge_haplotypes.py", checkIfExists: true)
 
 // STAGE CHANNELS
-if (params.all_runs) {
-    bam_files = Channel.fromPath("${params.input}/run*/ont_pl_SUP/barcode*/**${params.bam_pattern}", type: 'file')
+bam_file_path = Channel.fromPath("${params.input}/barcode*/**${params.bam_pattern}", type: 'file')
 
-    sample_sheets = [:]
-    Channel.fromPath("${params.input}/run*/lib/*${params.sample_sheet}", type: 'file')
-    .map { 
-        sample_sheet_path ->
-            run = ( sample_sheet_path =~ /run\d*_*V*\d*/)[0]
-            sample_sheets.put("$run", sample_sheet_path)
-    }
-} else {
-    bam_files = Channel.fromPath("${params.input}/${params.ont_pl_dir}/**${params.bam_pattern}", type: 'file')
-    sample_sheets = [:]
-    Channel.fromPath("${params.input}/lib/*${params.sample_sheet}", type: 'file')
-    .map { 
-        sample_sheet_path ->
-            run = ( sample_sheet_path =~ /run\d*_*V*\d*/)[0]
-            sample_sheets.put("$run", sample_sheet_path)
-    }
-}
-
-
-
-bam_files
+bam_file_path
 .map { 
     bam_file_path -> 
-        run = (bam_file_path =~ /run\d*_*V*\d*/)[0]
         barcode = (bam_file_path =~ /barcode\d*/)[0]
-        tuple ( run, barcode, bam_file_path) 
+        tuple ( barcode, bam_file_path)
 }
-.set { bam_file_tuples }
+.set { bam_file }
 
-
-include {CLIP_SEQUENCES} from '../processes/clip_sequences.nf'
-include {MULTIPLE_ALIGNMENT} from '../processes/multiple_alignment.nf'
 include {EXTRACT_HAPLOTYPES} from '../processes/extract_haplotypes.nf'
+include {MERGE_HAPLOTYPES} from '../processes/merge_haplotypes.nf'
+include {MULTIPLE_ALIGNMENT} from '../processes/multiple_alignment.nf'
 
 workflow EXTRACT_HAPLOTYPES_WF {
 
-    CLIP_SEQUENCES(bam_file_tuples, clip_sequences)
+    EXTRACT_HAPLOTYPES(bam_file, extract_haplotypes_py)
 
-    CLIP_SEQUENCES.out.fasta_clipped.
-    filter{ run, barcode, fasta_file -> fasta_file.countFasta() > 1 }
-    .set { fasta_clipped_filtered }
+    EXTRACT_HAPLOTYPES.out.extracted_haplotypes
+    filter{ run, barcode, fasta_file -> fasta_file.countFasta() >= 1 }
+    .set { extract_haplotypes_filtered }
 
-    MULTIPLE_ALIGNMENT(fasta_clipped_filtered)
+    MERGE_HAPLOTYPES(extract_haplotypes_filtered, merge_haplotypes_py)
 
-    MULTIPLE_ALIGNMENT.out.fasta_aligned
-
-    MULTIPLE_ALIGNMENT.out.fasta_aligned
-    .map{ run, barcode, fasta_aligned ->
-        sample_sheet = sample_sheets.get("$run")
-        tuple (run, barcode, fasta_aligned, sample_sheet )
-    }
-    .set{ fasta_aligned_sample_sheet }
+    MULTIPLE_ALIGNMENT(MERGE_HAPLOTYPES.out.merged_haplotypes)
+    
 
     EXTRACT_HAPLOTYPES(fasta_aligned_sample_sheet, extract_haplotype)
 }

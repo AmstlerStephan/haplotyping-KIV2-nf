@@ -1,10 +1,10 @@
-process EXTRACT_HAPLOTYPES {
+process MERGE_HAPLOTYPES {
     publishDir "${params.output}/${sample}/haplotyping/", mode: 'copy'
   input:
     tuple val( sample ), path( fastx_file )
     path merge_haplotypes_py
   output:
-    tuple val( "${sample}" ), path( "*merged_haplotypes.${output_format}" ), emit: haplotype
+    tuple val( "${sample}" ), path( "*merged_haplotypes.${output_format}" ), emit: merged_haplotypes
     path "*${output_format}"
     
   script:
