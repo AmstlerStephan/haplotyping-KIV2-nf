@@ -237,10 +237,10 @@ def write_haplotype_stats(merged_sequences, output, file_name):
     
     with open(haplotype_stats_file, "w") as out_f:
         print("haplotype\thaplotype_occurences\thigh_qual\thaplotype_length", file=out_f)
-        for sequence in merged_sequences:
-            n_sequences = len(merged_sequences[sequence]) - 1
+        for sequence, info in merged_sequences.items():
+            n_sequences = len(info["reads"])
             haplotype_length = len(sequence)
-            high_qual = merged_sequences[sequence]["high_qual"]
+            high_qual = info["high_qual"]
             print("{}\t{}\t{}\t{}".format(sequence, n_sequences, high_qual, haplotype_length), file = out_f)
 
 
