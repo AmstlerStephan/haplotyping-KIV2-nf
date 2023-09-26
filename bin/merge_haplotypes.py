@@ -89,7 +89,7 @@ def get_merged_haplotypes(args):
     unique_sequences = get_unique_sequences(fasta_file)
     write_haplotypes(unique_sequences, output_format, output, "unique_haplotypes")
     write_subreads(unique_sequences, output_format, output, "unique_haplotypes_subreads")
-    while queries_left | max_dist < 10:
+    while queries_left:
         merged_sequences, queries_left = get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path)
         max_dist += 1
     write_haplotypes(merged_sequences, output_format, output, "merged_haplotypes")
@@ -103,7 +103,7 @@ def get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_
 def merge_sequences(unique_sequences, close_sequences):
     for sequence, queries in close_sequences.items():
         for query in queries:
-            unique_sequences[sequence] = Merge(unique_sequences[sequence], unique_sequences[query])
+            unique_sequences[sequence]["reads"] = Merge(unique_sequences[sequence]["reads"], unique_sequences[query]["reads"])
     
     for sequence, queries in close_sequences.items():
         for query in queries:
@@ -124,6 +124,7 @@ def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_fil
             is_low_qual = not unique_sequences[query_sequence]["high_qual"]
             
             if is_low_qual and is_smaller_than_cluster_cutoff:
+                
                 result = edlib.align(
                     sequence, 
                     query_sequence, 
@@ -206,7 +207,7 @@ def write_merge_log(sequence, query_sequence, n_queries, result, max_dist, clust
             pos = int(difference.split("=")[0])
             base = sequence[pos:pos+n_bases]
             query_base = query_sequence[pos:pos+n_bases]
-            print("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(
+            print("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(
                 sequence, 
                 query_sequence,
                 n_queries,
