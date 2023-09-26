@@ -89,35 +89,41 @@ def get_merged_haplotypes(args):
     unique_sequences = get_unique_sequences(fasta_file)
     write_haplotypes(unique_sequences, output_format, output, "unique_haplotypes")
     write_subreads(unique_sequences, output_format, output, "unique_haplotypes_subreads")
-    while queries_left | max_dist < 100:
+    while queries_left | max_dist < 10:
         merged_sequences, queries_left = get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path)
         max_dist += 1
     write_haplotypes(merged_sequences, output_format, output, "merged_haplotypes")
     write_haplotype_stats(merged_sequences, output, "merged_haplotype_stats")
 
-def write_haplotype_stats(merged_sequences, output, file_name):
-    haplotype_stats_file = os.path.join(output, "{}.tsv".format(file_name))
-    
-    with open(haplotype_stats_file, "w") as out_f:
-        print("haplotype\thaplotype_occurences\thigh_qual\thaplotype_length", file=out_f)
-        for sequence in merged_sequences:
-            n_sequences = len(merged_sequences[sequence]) - 1
-            haplotype_length = len(sequence)
-            high_qual = merged_sequences[sequence]["high_qual"]
-            print("{}\t{}\t{}\t{}".format(sequence, n_sequences, high_qual, haplotype_length), file = out_f)
-
 def get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
-    n_unique_sequences = len(unique_sequences)
+    close_sequences = find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path)
+    unique_sequences = merge_sequences(unique_sequences, close_sequences)
+    return unique_sequences, len(close_sequences) > 1
+
+def merge_sequences(unique_sequences, close_sequences):
+    for sequence, queries in close_sequences.items():
+        for query in queries:
+            unique_sequences[sequence] = Merge(unique_sequences[sequence], unique_sequences[query])
     
-    # value of "high_qual" is also included in len
-    cluster_cutoff = math.ceil(variant_cutoff * n_unique_sequences) + 1
-    sequences_to_remove = list()
-    unique_sequences_copy = unique_sequences.copy()
-    queries_left = False
-    for sequence in unique_sequences_copy:
-        for query_sequence in unique_sequences:
-            n_queries = len(unique_sequences[query_sequence])
-            if not unique_sequences[query_sequence]["high_qual"] and n_queries <= cluster_cutoff:
+    for sequence, queries in close_sequences.items():
+        for query in queries:
+            if query in unique_sequences:
+                unique_sequences.pop(query)
+    
+    return unique_sequences
+
+def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
+    n_unique_sequences = len(unique_sequences)
+    cluster_cutoff = math.ceil(variant_cutoff * n_unique_sequences)
+    close_sequences = dict()
+    for sequence in unique_sequences.keys():
+        for query_sequence in unique_sequences.keys():
+            
+            n_queries = len(unique_sequences[query_sequence]["reads"])
+            is_smaller_than_cluster_cutoff = n_queries <= cluster_cutoff
+            is_low_qual = not unique_sequences[query_sequence]["high_qual"]
+            
+            if is_low_qual and is_smaller_than_cluster_cutoff:
                 result = edlib.align(
                     sequence, 
                     query_sequence, 
@@ -126,15 +132,69 @@ def get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_
                     k=max_dist
                 )
                 if result["editDistance"] > 0:
-                    queries_left = True
-                    sequences_to_remove.append(query_sequence)
+                    if sequence in close_sequences:
+                        close_sequences[sequence].append(query_sequence)
+                    else:
+                        close_sequences[sequence] = [query_sequence]
                     write_merge_log(sequence, query_sequence, n_queries, result, max_dist, cluster_cutoff, variant_cutoff, n_unique_sequences, stats_file_path)
-        
-        for sequence_to_remove in sequences_to_remove:
-            unique_sequences[sequence_to_remove] = Merge(unique_sequences[sequence_to_remove], unique_sequences[sequence_to_remove])
-            unique_sequences.pop(sequence_to_remove)
-        sequences_to_remove.clear()
-    return unique_sequences, queries_left
+    return close_sequences
+
+   
+def get_unique_sequences(fasta_file):
+    unique_sequences = dict()
+    
+    with pysam.FastxFile(fasta_file) as reads:
+        for read in reads:
+            unmasked_sequence = read.sequence.upper()
+            high_qual = all(base.isupper() for base in read.sequence)
+            if unmasked_sequence in unique_sequences:
+                unique_sequences[unmasked_sequence]["reads"][read.name] = read.sequence
+            else:
+                unique_sequences[unmasked_sequence] = dict()
+                unique_sequences[unmasked_sequence]["reads"] = dict()
+                unique_sequences[unmasked_sequence]["reads"][read.name] = read.sequence
+                
+            unique_sequences[unmasked_sequence]["high_qual"] = high_qual
+    return unique_sequences
+
+
+def write_subreads(unique_reads, output_format, output, file_name):
+    haplotype_file = os.path.join(output, "{}.{}".format(file_name, output_format))
+    with open(haplotype_file, "w") as out_f:
+        for i, sequence in enumerate(unique_reads.keys()):
+            for sub_name, sub_sequence in unique_reads[sequence]["reads"].items():
+                name = "{}_{}".format(i, sub_name)
+                write_fasta_read(name, sub_sequence, out_f)
+
+                    
+def write_haplotypes(haplotypes, output_format, output, file_name):
+    haplotype_file = os.path.join(output, "{}.fasta".format(file_name))
+    with open(haplotype_file, "w") as out_f:
+        for i, sequence in enumerate(haplotypes):
+            n_reads = len(haplotypes[sequence]["reads"])
+            high_qual = haplotypes[sequence]["high_qual"]
+            name = "{},size={},high_qual={}".format(i, n_reads, high_qual)
+            write_fasta_read(name, sequence, out_f) 
+
+
+def write_fastq_read(read_name, read_seq, read_qual, out_f):
+    # print("@{},positions={}".format(read_name, positions), file=out_f)
+    print("@{}".format(read_name), file=out_f)
+    print("{}".format(read_seq), file=out_f)
+    print("+", file=out_f)
+    print("{}".format(read_qual), file=out_f)
+
+
+def write_fasta_read(read_name, read_seq, out_f):
+    # print(">{},positions={}".format(read_name, positions,), file=out_f)
+    print(">{}".format(read_name), file=out_f)
+    print("{}".format(read_seq), file=out_f)
+
+
+def Merge(dict1, dict2):
+    res = {**dict1, **dict2}
+    return res
+
 
 def write_merge_log(sequence, query_sequence, n_queries, result, max_dist, cluster_cutoff, variant_cutoff, n_unique_sequences, stats_file_path):
     edist = result["editDistance"]
@@ -161,58 +221,19 @@ def write_merge_log(sequence, query_sequence, n_queries, result, max_dist, clust
                 n_unique_sequences),
                   file = stats_file)
 
-def get_unique_sequences(fasta_file):
-    unique_sequences = dict()
+
+
+def write_haplotype_stats(merged_sequences, output, file_name):
+    haplotype_stats_file = os.path.join(output, "{}.tsv".format(file_name))
     
-    with pysam.FastxFile(fasta_file) as reads:
-        for read in reads:
-            unmasked_sequence = read.sequence.upper()
-            contains_lower = not any(base.islower() for base in read.sequence)
-            if unmasked_sequence in unique_sequences:
-                unique_sequences[unmasked_sequence].update({ read.name : read.sequence})
-            else:
-                unique_sequences[unmasked_sequence] = {read.name : read.sequence}
-                
-            unique_sequences[unmasked_sequence].update({ "high_qual" : contains_lower})
-    return unique_sequences
+    with open(haplotype_stats_file, "w") as out_f:
+        print("haplotype\thaplotype_occurences\thigh_qual\thaplotype_length", file=out_f)
+        for sequence in merged_sequences:
+            n_sequences = len(merged_sequences[sequence]) - 1
+            haplotype_length = len(sequence)
+            high_qual = merged_sequences[sequence]["high_qual"]
+            print("{}\t{}\t{}\t{}".format(sequence, n_sequences, high_qual, haplotype_length), file = out_f)
 
-def write_subreads(unique_reads, output_format, output, file_name):
-    offset = 0
-    haplotype_file = os.path.join(output, "{}.{}".format(file_name, output_format))
-    with open(haplotype_file, "w") as out_f:
-        for i, sequences in enumerate(unique_reads):
-            for j, sequence in enumerate(unique_reads[sequences]):
-                if sequence != "high_qual":
-                    name = "{}_{}".format(i, j - offset)
-                    write_fasta_read(name, unique_reads[sequences][sequence], out_f)
-                else:
-                    offset = 1 
-            offset = 0
-                    
-def write_haplotypes(haplotypes, output_format, output, file_name):
-    haplotype_file = os.path.join(output, "{}.{}".format(file_name, output_format))
-    with open(haplotype_file, "w") as out_f:
-        for i, sequence in enumerate(haplotypes):
-            name = "{},size={},high_qual={}".format(i, len(haplotypes[sequence]), haplotypes[sequence]["high_qual"])
-            write_fasta_read(name, sequence, out_f) 
-
-def write_fastq_read(read_name, read_seq, read_qual, out_f):
-    # print("@{},positions={}".format(read_name, positions), file=out_f)
-    print("@{}".format(read_name), file=out_f)
-    print("{}".format(read_seq), file=out_f)
-    print("+", file=out_f)
-    print("{}".format(read_qual), file=out_f)
-
-def write_fasta_read(read_name, read_seq, out_f):
-    # print(">{},positions={}".format(read_name, positions,), file=out_f)
-    print(">{}".format(read_name), file=out_f)
-    print("{}".format(read_seq), file=out_f)
-
-# Python code to merge dict using a single
-# expression
-def Merge(dict1, dict2):
-    res = {**dict1, **dict2}
-    return res
 
 def main(argv=sys.argv[1:]):
     """
