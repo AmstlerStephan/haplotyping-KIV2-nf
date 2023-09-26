@@ -79,8 +79,10 @@ def get_merged_haplotypes(args):
     variant_cutoff = args.VARIANT_CUTOFF
     queries_left = True
     max_dist = 1
-    stats_file_name = "merged_haplotype_stats"
+    stats_file_name = "merged_haplotype_log"
     stats_file_path = os.path.join(output, "{}.tsv".format(stats_file_name))
+    
+    # write first line of log
     with open(stats_file_path, "w") as stats_file:
         print("sequence\tquery_sequence\tquery_size\tedist\tposition\tbase\tquery_base\tchange\tmax_dist\tcluster_cutoff\tvariant_cutoff\tn_unique_sequences", file = stats_file)
     
@@ -91,10 +93,23 @@ def get_merged_haplotypes(args):
         merged_sequences, queries_left = get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path)
         max_dist += 1
     write_haplotypes(merged_sequences, output_format, output, "merged_haplotypes")
+    write_haplotype_stats(merged_sequences, output, "merged_haplotype_stats")
+
+def write_haplotype_stats(merged_sequences, output, file_name):
+    haplotype_stats_file = os.path.join(output, "{}.tsv".format(file_name))
+    
+    with open(haplotype_stats_file, "w") as out_f:
+        print("haplotype\thaplotype_occurences\nhigh_qual", file=out_f)
+        for sequence in merged_sequences:
+            n_sequences = len(merged_sequences[sequence]) - 1
+            high_qual = merged_sequences[sequence]["high_qual"]
+            print("{}\t{}\t{}".format(sequence, n_sequences, high_qual), file = out_f)
 
 def get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
     n_unique_sequences = len(unique_sequences)
-    cluster_cutoff = math.ceil(variant_cutoff * n_unique_sequences)
+    
+    # value of "high_qual" is also included in len
+    cluster_cutoff = math.ceil(variant_cutoff * n_unique_sequences) + 1
     sequences_to_remove = list()
     unique_sequences_copy = unique_sequences.copy()
     queries_left = False
