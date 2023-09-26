@@ -89,7 +89,7 @@ def get_merged_haplotypes(args):
     unique_sequences = get_unique_sequences(fasta_file)
     write_haplotypes(unique_sequences, output_format, output, "unique_haplotypes")
     write_subreads(unique_sequences, output_format, output, "unique_haplotypes_subreads")
-    while queries_left | max_dist < 10:
+    while queries_left:
         merged_sequences, queries_left = get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path)
         max_dist += 1
     write_haplotypes(merged_sequences, output_format, output, "merged_haplotypes")
@@ -98,7 +98,7 @@ def get_merged_haplotypes(args):
 def get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
     close_sequences = find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path)
     unique_sequences = merge_sequences(unique_sequences, close_sequences)
-    return unique_sequences, len(close_sequences) > 1
+    return unique_sequences, len(close_sequences) >= 1
 
 def merge_sequences(unique_sequences, close_sequences):
     for sequence, queries in close_sequences.items():
@@ -115,6 +115,8 @@ def merge_sequences(unique_sequences, close_sequences):
 def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
     n_unique_sequences = len(unique_sequences)
     cluster_cutoff = math.ceil(variant_cutoff * n_unique_sequences)
+    if cluster_cutoff <= 1:
+        cluster_cutoff = 3
     close_sequences = dict()
     for sequence, info in unique_sequences.items():
         
@@ -156,6 +158,7 @@ def get_unique_sequences(fasta_file):
         for read in reads:
             unmasked_sequence = read.sequence.upper()
             high_qual = all(base.isupper() for base in read.sequence)
+            # n_low_qual = sum(base.isupper() for base in read.sequence)
             if unmasked_sequence in unique_sequences:
                 unique_sequences[unmasked_sequence]["reads"][read.name] = read.sequence
             else:
