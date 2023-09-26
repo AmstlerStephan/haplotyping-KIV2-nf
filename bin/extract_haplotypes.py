@@ -84,6 +84,13 @@ def parse_args(argv):
         nargs="+",
         help="Positions within the listed ranges will be excluded from the haplotypes",
     )
+    parser.add_argument(
+        "--variant_cutoff",
+        dest="VARIANT_CUTOFF",
+        type=float,
+        default=0.0085,
+        help="Cutoff to merge clusters",
+    )
     
     args = parser.parse_args(argv)
 
@@ -107,9 +114,10 @@ def get_haplotypes(args):
     ranges_to_exclude = args.RANGES_TO_EXCLUDE
     hardmask = args.HARDMASK
     filter_haplotypes = args.FILTER_HAPLOTYPES
+    variant_cutoff = args.VARIANT_CUTOFF
     
     query_names = get_query_names(bam_file)
-    haplotypes = get_extracted_haplotypes(bam_file, query_names)
+    haplotypes = get_extracted_haplotypes(bam_file, query_names, variant_cutoff)
     write_haplotypes(haplotypes, output_format, output, "haplotypes")
     write_stat_file(haplotypes, output, "haplotype_stats")
     
@@ -127,14 +135,14 @@ def get_query_names(bam_file):
                 quality = list())
     return query_names
 
-def get_extracted_haplotypes(bam_file, query_names):
+def get_extracted_haplotypes(bam_file, query_names, variant_cutoff):
     
     with pysam.AlignmentFile(bam_file, "rb") as samfile:
         # truncate = True truncates overlapping reads to positions which are aligned to the ref
         # loop over columns of bam_file
         for pileup_column in samfile.pileup(truncate = True):
             # check for polymorphic position
-            if is_polymorphic_position(pileup_column):
+            if is_polymorphic_position(pileup_column, variant_cutoff):
                 pos = pileup_column.reference_pos
             # loop over reads per column
                 for pileup_read in pileup_column.pileups:
@@ -213,14 +221,15 @@ def get_stats(haplotypes):
         # loop over every position of each haplotype
         for i, pos in enumerate(haplotypes[haplotype_name]["position"]):
             base = str(haplotypes[haplotype_name]["haplotype"][i])
-            if pos not in position_stats:
-                position_stats[pos] = { base : 1 }
-            if base not in position_stats[pos]:
-                position_stats[pos][base] = 1
+            if pos in position_stats:
+                if base in position_stats[pos]:
+                    position_stats[pos][base] += 1
+                else:
+                    position_stats[pos][base] = 1
             else:
-                count = position_stats[pos][base]
-                count+=1
-                position_stats[pos][base] = count
+                position_stats[pos] = dict()
+                position_stats[pos][base] = 1
+                
     return position_stats
     
 def write_fastq_read(read_name, read_seq, read_qual, out_f):
@@ -259,8 +268,24 @@ def exclude_pos(pos, regions_to_exclude):
         exclude = pos > range["start"] and pos < range["end"] or exclude
     return exclude
 
-def is_polymorphic_position(pileup_column):
-    return len(set(pileup_column.get_query_sequences(add_indels = True))) > 1
+def is_polymorphic_position(pileup_column, variant_cutoff):
+    variants = dict()
+    bases = pileup_column.get_query_sequences(add_indels = True)
+    n_bases = len(bases)
+    is_polymorphic = True
+    for base in bases:
+        if base in variants:
+            variants[base] += 1
+        else: 
+            variants[base] = 1
+    print(variants)
+    if len(variants) == 1:
+        return False
+    else:
+        for variant in variants:
+            is_polymorphic = is_polymorphic & (variants[variant] / n_bases >= variant_cutoff)
+            
+    return is_polymorphic
 
 def main(argv=sys.argv[1:]):
     """
