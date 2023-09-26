@@ -99,11 +99,12 @@ def write_haplotype_stats(merged_sequences, output, file_name):
     haplotype_stats_file = os.path.join(output, "{}.tsv".format(file_name))
     
     with open(haplotype_stats_file, "w") as out_f:
-        print("haplotype\thaplotype_occurences\nhigh_qual", file=out_f)
+        print("haplotype\thaplotype_occurences\thigh_qual\thaplotype_length", file=out_f)
         for sequence in merged_sequences:
             n_sequences = len(merged_sequences[sequence]) - 1
+            haplotype_length = len(sequence)
             high_qual = merged_sequences[sequence]["high_qual"]
-            print("{}\t{}\t{}".format(sequence, n_sequences, high_qual), file = out_f)
+            print("{}\t{}\t{}\t{}".format(sequence, n_sequences, high_qual, haplotype_length), file = out_f)
 
 def get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
     n_unique_sequences = len(unique_sequences)
