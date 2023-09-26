@@ -116,28 +116,36 @@ def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_fil
     n_unique_sequences = len(unique_sequences)
     cluster_cutoff = math.ceil(variant_cutoff * n_unique_sequences)
     close_sequences = dict()
-    for sequence in unique_sequences.keys():
-        for query_sequence in unique_sequences.keys():
-            
-            n_queries = len(unique_sequences[query_sequence]["reads"])
-            is_smaller_than_cluster_cutoff = n_queries <= cluster_cutoff
-            is_low_qual = not unique_sequences[query_sequence]["high_qual"]
-            
-            if is_low_qual and is_smaller_than_cluster_cutoff:
+    for sequence, info in unique_sequences.items():
+        
+        n_sequences = len(info["reads"])
+        is_bigger_than_cluster_cutoff = n_sequences > cluster_cutoff
+        is_high_qual = info["high_qual"]
+        
+        if is_bigger_than_cluster_cutoff | is_high_qual:
+            for query_sequence, query_info in unique_sequences.items():
+                if query_sequence == sequence:
+                    continue
                 
-                result = edlib.align(
-                    sequence, 
-                    query_sequence, 
-                    mode="NW", 
-                    task="path",
-                    k=max_dist
-                )
-                if result["editDistance"] > 0:
-                    if sequence in close_sequences:
-                        close_sequences[sequence].append(query_sequence)
-                    else:
-                        close_sequences[sequence] = [query_sequence]
-                    write_merge_log(sequence, query_sequence, n_queries, result, max_dist, cluster_cutoff, variant_cutoff, n_unique_sequences, stats_file_path)
+                n_queries = len(query_info["reads"])
+                is_smaller_than_cluster_cutoff = n_queries <= cluster_cutoff
+                is_low_qual = not query_info["high_qual"]
+                
+                if is_low_qual and is_smaller_than_cluster_cutoff:
+                    
+                    result = edlib.align(
+                        sequence, 
+                        query_sequence, 
+                        mode="NW", 
+                        task="path",
+                        k=max_dist
+                    )
+                    if result["editDistance"] > 0:
+                        if sequence in close_sequences:
+                            close_sequences[sequence].append(query_sequence)
+                        else:
+                            close_sequences[sequence] = [query_sequence]
+                        write_merge_log(sequence, query_sequence, n_queries, result, max_dist, cluster_cutoff, variant_cutoff, n_unique_sequences, stats_file_path)
     return close_sequences
 
    
