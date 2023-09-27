@@ -120,7 +120,7 @@ def get_number_of_sequences(unique_sequences):
 
 def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
     n_total_sequences = get_number_of_sequences(unique_sequences)
-    cluster_cutoff = math.ceil(variant_cutoff * n_total_sequences)
+    cluster_cutoff = round(variant_cutoff * n_total_sequences)
     close_sequences = dict()
     for sequence, info in unique_sequences.items():
         
