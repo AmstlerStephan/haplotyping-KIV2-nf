@@ -112,11 +112,15 @@ def merge_sequences(unique_sequences, close_sequences):
     
     return unique_sequences
 
+def get_number_of_sequences(unique_sequences):
+    n_sequences = 0
+    for sequence in unique_sequences.values():
+        n_sequences += len(sequence["reads"])
+    return n_sequences
+
 def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
-    n_unique_sequences = len(unique_sequences)
-    cluster_cutoff = math.ceil(variant_cutoff * n_unique_sequences)
-    if cluster_cutoff <= 1:
-        cluster_cutoff = 3
+    n_total_sequences = get_number_of_sequences(unique_sequences)
+    cluster_cutoff = math.ceil(variant_cutoff * n_total_sequences)
     close_sequences = dict()
     for sequence, info in unique_sequences.items():
         
@@ -147,7 +151,7 @@ def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_fil
                             close_sequences[sequence].append(query_sequence)
                         else:
                             close_sequences[sequence] = [query_sequence]
-                        write_merge_log(sequence, query_sequence, n_queries, result, max_dist, cluster_cutoff, variant_cutoff, n_unique_sequences, stats_file_path)
+                        write_merge_log(sequence, query_sequence, n_queries, result, max_dist, cluster_cutoff, variant_cutoff, n_total_sequences, stats_file_path)
     return close_sequences
 
    
