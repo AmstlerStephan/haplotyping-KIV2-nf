@@ -50,6 +50,18 @@ def parse_args(argv):
         help="Output format of the haplotypes"
     )
     parser.add_argument(
+        "--variant_calling_positions", 
+        dest="VARIANT_CALLING_POSITIONS", 
+        type=str, 
+        help="File with all positions from variant calling (column name must be 'position')"
+    )
+    parser.add_argument(
+        "--use_variant_calling_positions", 
+        dest="USE_VARIANT_CALLING_POSITIONS", 
+        action="store_true", 
+        help="Use positions from variant calling"
+    )
+    parser.add_argument(
         "-o", 
         "--output", 
         dest="OUTPUT", 
@@ -91,6 +103,7 @@ def parse_args(argv):
         default=0.0085,
         help="Cutoff to merge clusters",
     )
+    
     
     args = parser.parse_args(argv)
 
@@ -282,8 +295,8 @@ def is_polymorphic_position(pileup_column, variant_cutoff):
     if len(variants) == 1:
         return False
     else:
-        for variant in variants:
-            is_polymorphic = is_polymorphic & (variants[variant] / n_bases >= variant_cutoff)
+        for base in variants:
+            is_polymorphic = is_polymorphic & (variants[base] / n_bases >= variant_cutoff)
             
     return is_polymorphic
 

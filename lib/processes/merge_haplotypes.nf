@@ -15,6 +15,7 @@ process MERGE_HAPLOTYPES {
       --fastx_file ${fastx_file} \
       --variant_cutoff ${params.variant_cutoff} \
       --output_format ${params.output_format} \
+      --max_edit_distance ${params.max_edit_distance} \
       -o ./
     """
 }

@@ -60,6 +60,13 @@ def parse_args(argv):
         help="Cutoff to merge clusters",
     )
     parser.add_argument(
+        "--max_edit_distance",
+        dest="MAX_EDIT_DISTANCE",
+        type=int,
+        default=2,
+        help="Cutoff to merge clusters",
+    )
+    parser.add_argument(
         "-o", 
         "--output", 
         dest="OUTPUT",
@@ -77,6 +84,7 @@ def get_merged_haplotypes(args):
     output_format = args.OUTPUT_FORMAT
     output = args.OUTPUT
     variant_cutoff = args.VARIANT_CUTOFF
+    max_edit_distance = args.MAX_EDIT_DISTANCE
     queries_left = True
     max_dist = 1
     stats_file_name = "merged_haplotype_log"
@@ -89,7 +97,9 @@ def get_merged_haplotypes(args):
     unique_sequences = get_unique_sequences(fasta_file)
     write_haplotypes(unique_sequences, output_format, output, "unique_haplotypes")
     write_subreads(unique_sequences, output_format, output, "unique_haplotypes_subreads")
-    while queries_left:
+    
+    # Think about how to treat max distance and cluster cutoff! may add <and max_dist < 3>
+    while queries_left and max_dist <= max_edit_distance:
         merged_sequences, queries_left = get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path)
         max_dist += 1
     write_haplotypes(merged_sequences, output_format, output, "merged_haplotypes")
@@ -120,7 +130,8 @@ def get_number_of_sequences(unique_sequences):
 
 def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
     n_total_sequences = get_number_of_sequences(unique_sequences)
-    cluster_cutoff = round(variant_cutoff * n_total_sequences)
+    # For maximal number of KIV-2 repeats: 80 (0.0125)
+    cluster_cutoff = round(variant_cutoff  * n_total_sequences)
     close_sequences = dict()
     for sequence, info in unique_sequences.items():
         
