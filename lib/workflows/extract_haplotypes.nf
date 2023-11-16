@@ -19,7 +19,7 @@ filter_bam_py = file( "${projectDir}/bin/filter_bam.py", checkIfExists: true)
 if (params.use_variant_calling_positions) {
     variant_calling_positions = file( "${params.variant_calling_positions}", checkIfExists: true)
 } else {
-    variant_calling_positions = Channel.of()
+    variant_calling_positions = file( "${projectDir}/data/variant_calling/NO_FILE.txt", checkIfExists: true)
 }
 
 // STAGE CHANNELS
