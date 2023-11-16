@@ -3,6 +3,7 @@ import logging
 import os
 
 import pysam
+import pandas as pd
 import sys
 
 def parse_args(argv):
@@ -128,9 +129,11 @@ def get_haplotypes(args):
     hardmask = args.HARDMASK
     filter_haplotypes = args.FILTER_HAPLOTYPES
     variant_cutoff = args.VARIANT_CUTOFF
+    use_variant_calling_positions = args.USE_VARIANT_CALLING_POSITIONS
+    variant_calling_positions = args.VARIANT_CALLING_POSITIONS
     
     query_names = get_query_names(bam_file)
-    haplotypes = get_extracted_haplotypes(bam_file, query_names, variant_cutoff)
+    haplotypes = get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_calling_positions, variant_calling_positions)
     write_haplotypes(haplotypes, output_format, output, "haplotypes")
     write_stat_file(haplotypes, output, "haplotype_stats")
     
@@ -148,16 +151,28 @@ def get_query_names(bam_file):
                 quality = list())
     return query_names
 
-def get_extracted_haplotypes(bam_file, query_names, variant_cutoff):
-    
+def extract_haplotype(pileup_column, variant_cutoff, use_variant_calling_positions, positions):
+    extract_haplotype = False
+    if use_variant_calling_positions:
+        if pileup_column.reference_pos in positions:
+            extract_haplotype = True
+    else:
+        # check for polymorphic position
+        if is_polymorphic_position(pileup_column, variant_cutoff):
+            extract_haplotype = True
+    return extract_haplotype
+
+def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_calling_positions, variant_calling_positions):
+    if use_variant_calling_positions:
+        positions = pd.read_csv(variant_calling_positions, sep = "\t")["position"].to_list()
     with pysam.AlignmentFile(bam_file, "rb") as samfile:
         # truncate = True truncates overlapping reads to positions which are aligned to the ref
         # loop over columns of bam_file
         for pileup_column in samfile.pileup(truncate = True):
-            # check for polymorphic position
-            if is_polymorphic_position(pileup_column, variant_cutoff):
+            extract = extract_haplotype(pileup_column, variant_cutoff, use_variant_calling_positions, positions)
+            if extract:
                 pos = pileup_column.reference_pos
-            # loop over reads per column
+                # loop over reads per column
                 for pileup_read in pileup_column.pileups:
                     read = pileup_read.alignment
                     read_pos = pileup_read.query_position

@@ -15,6 +15,11 @@ extract_haplotypes_py = file( "${projectDir}/bin/extract_haplotypes.py", checkIf
 merge_haplotypes_py = file( "${projectDir}/bin/merge_haplotypes.py", checkIfExists: true)
 filter_bam_py = file( "${projectDir}/bin/filter_bam.py", checkIfExists: true)
 
+// files
+if ("${params.use_variant_calling_positions}") {
+    variant_calling_positions = file( "${params.variant_calling_positions}", checkIfExists: true)
+}
+
 // STAGE CHANNELS
 bam_file_paths = Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}", type: "file")
 bam_file_index_paths = Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}.bai", type: "file")
@@ -55,7 +60,7 @@ include {FILTER_BAM} from '../processes/filter_bam.nf'
 workflow EXTRACT_HAPLOTYPES_WF {
 
     FILTER_BAM(bam_stats_tuples, filter_bam_py)
-    EXTRACT_HAPLOTYPES(FILTER_BAM.out.filtered_bam, extract_haplotypes_py)
+    EXTRACT_HAPLOTYPES(FILTER_BAM.out.filtered_bam, variant_calling_positions, extract_haplotypes_py)
 
     extracted_haplotypes_filtered = EXTRACT_HAPLOTYPES.out.extracted_haplotypes
     filter{ barcode, fasta_file -> fasta_file.countFasta() >= 1 }
