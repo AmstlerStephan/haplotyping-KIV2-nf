@@ -4,6 +4,7 @@ import os
 import math
 import re
 import sys
+import uuid
 
 import pysam
 import edlib
@@ -131,6 +132,8 @@ def get_number_of_sequences(unique_sequences):
 def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
     n_total_sequences = get_number_of_sequences(unique_sequences)
     # For maximal number of KIV-2 repeats: 80 (0.0125)
+    # Change back to variant_cutoff!
+    # variant_cutoff = 0.0125
     cluster_cutoff = round(variant_cutoff  * n_total_sequences)
     close_sequences = dict()
     for sequence, info in unique_sequences.items():
@@ -200,7 +203,8 @@ def write_haplotypes(haplotypes, output_format, output, file_name):
         for i, sequence in enumerate(haplotypes):
             n_reads = len(haplotypes[sequence]["reads"])
             high_qual = haplotypes[sequence]["high_qual"]
-            name = "{},size={},high_qual={}".format(i, n_reads, high_qual)
+            unique_identifier = uuid.uuid4()
+            name = "{},size={},high_qual={},uuid={}".format(i, n_reads, high_qual, unique_identifier)
             write_fasta_read(name, sequence, out_f) 
 
 
