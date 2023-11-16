@@ -151,9 +151,10 @@ def get_query_names(bam_file):
                 quality = list())
     return query_names
 
-def extract_haplotype(pileup_column, variant_cutoff, use_variant_calling_positions, positions):
+def extract_haplotype(pileup_column, variant_cutoff, use_variant_calling_positions, variant_calling_positions):
     extract_haplotype = False
     if use_variant_calling_positions:
+        positions = pd.read_csv(variant_calling_positions, sep = "\t")["position"].to_list()
         if pileup_column.reference_pos in positions:
             extract_haplotype = True
     else:
@@ -163,13 +164,12 @@ def extract_haplotype(pileup_column, variant_cutoff, use_variant_calling_positio
     return extract_haplotype
 
 def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_calling_positions, variant_calling_positions):
-    if use_variant_calling_positions:
-        positions = pd.read_csv(variant_calling_positions, sep = "\t")["position"].to_list()
+
     with pysam.AlignmentFile(bam_file, "rb") as samfile:
         # truncate = True truncates overlapping reads to positions which are aligned to the ref
         # loop over columns of bam_file
         for pileup_column in samfile.pileup(truncate = True):
-            extract = extract_haplotype(pileup_column, variant_cutoff, use_variant_calling_positions, positions)
+            extract = extract_haplotype(pileup_column, variant_cutoff, use_variant_calling_positions, variant_calling_positions)
             if extract:
                 pos = pileup_column.reference_pos
                 # loop over reads per column
