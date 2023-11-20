@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import re
 
 import pysam
 import pandas as pd
@@ -169,12 +170,11 @@ def is_polymorphic_position(pileup_column, variant_cutoff):
         else: 
             variants[base] = 1
     if len(variants) == 1:
-        return False
+        return False, variants 
     else:
         for base in variants:
             is_polymorphic = is_polymorphic & (variants[base] / n_bases >= variant_cutoff)
-    print(variants)
-    return is_polymorphic
+    return is_polymorphic, variants
 
 def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_calling_positions, variant_calling_positions):
     with pysam.AlignmentFile(bam_file, "rb") as samfile:
@@ -182,32 +182,44 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
         # loop over columns of bam_file
         for pileup_column in samfile.pileup(truncate = True):
             variant = is_variant(pileup_column, use_variant_calling_positions, variant_calling_positions)
-            polymorphic = is_polymorphic_position(pileup_column, variant_cutoff)
+            polymorphic, variants = is_polymorphic_position(pileup_column, variant_cutoff)
+                    
             if polymorphic | variant:
                 pos = pileup_column.reference_pos
                 # loop over reads per column
                 for pileup_read in pileup_column.pileups:
                     read = pileup_read.alignment
+                    name = read.query_name
                     read_pos = pileup_read.query_position
-                    name = read.query_name  
                     
-                    # in case of indel a list is returned and joined with the existing list
-                    if pileup_read.indel >= 1:
-                        indel_length = pileup_read.indel
-                        bases = read.query_sequence[read_pos:read_pos + indel_length]
-                        quals = read.query_qualities[read_pos:read_pos + indel_length]
-                        query_names[name]["haplotype"].append(bases)
-                        query_names[name]["quality"].append(quals)
-                        query_names[name]["position"].append(pos)
-                        continue
-                    
-                    # deletion is annotated as - and qual set to 70 (might adjust)
-                    if pileup_read.is_del:
-                        base = "-"
-                        qual = 70
+                    if variant and not(polymorphic) and len(variants) > 1:
+                        base = max(variants)
+                        if re.search("\+", base):
+                            base = re.sub("\+\d", "", base)
+                            qual = [70] * len(base)
+                        elif re.search("-", base):
+                            base = "-"
+                            qual = 70
+                        else:
+                            qual = 70
                     else:
-                        base = read.query_sequence[read_pos]
-                        qual = read.query_qualities[read_pos]
+                        # in case of indel a list is returned and joined with the existing list
+                        if pileup_read.indel >= 1:
+                            indel_length = pileup_read.indel
+                            bases = read.query_sequence[read_pos:read_pos + indel_length]
+                            quals = read.query_qualities[read_pos:read_pos + indel_length]
+                            query_names[name]["haplotype"].append(bases)
+                            query_names[name]["quality"].append(quals)
+                            query_names[name]["position"].append(pos)
+                            continue
+                        
+                        # deletion is annotated as - and qual set to 70 (might adjust)
+                        if pileup_read.is_del:
+                            base = "-"
+                            qual = 70
+                        else:
+                            base = read.query_sequence[read_pos]
+                            qual = read.query_qualities[read_pos]
                     
                     query_names[name]["haplotype"].append(base) 
                     query_names[name]["quality"].append(qual) 
