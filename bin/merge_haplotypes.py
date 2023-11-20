@@ -194,6 +194,7 @@ def write_subreads(unique_reads, output_format, output, file_name):
         for i, sequence in enumerate(unique_reads.keys()):
             for sub_name, sub_sequence in unique_reads[sequence]["reads"].items():
                 name = "{}_{}".format(i, sub_name)
+                print("{} in {}".format(sub_name, sub_sequence))
                 write_fasta_read(name, sub_sequence, out_f)
 
                     

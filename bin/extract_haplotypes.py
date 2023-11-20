@@ -151,26 +151,39 @@ def get_query_names(bam_file):
                 quality = list())
     return query_names
 
-def extract_haplotype(pileup_column, variant_cutoff, use_variant_calling_positions, variant_calling_positions):
-    extract_haplotype = False
+def is_variant(pileup_column, use_variant_calling_positions, variant_calling_positions):
     if use_variant_calling_positions:
         positions = pd.read_csv(variant_calling_positions, sep = "\t")["position"].to_list()
-        if pileup_column.reference_pos in positions:
-            extract_haplotype = True
+        return pileup_column.reference_pos in positions
     else:
-        # check for polymorphic position
-        if is_polymorphic_position(pileup_column, variant_cutoff):
-            extract_haplotype = True
-    return extract_haplotype
+        return False
+
+def is_polymorphic_position(pileup_column, variant_cutoff):
+    variants = dict()
+    bases = pileup_column.get_query_sequences(add_indels = True)
+    n_bases = len(bases)
+    is_polymorphic = True
+    for base in bases:
+        if base in variants:
+            variants[base] += 1
+        else: 
+            variants[base] = 1
+    if len(variants) == 1:
+        return False
+    else:
+        for base in variants:
+            is_polymorphic = is_polymorphic & (variants[base] / n_bases >= variant_cutoff)
+    print(variants)
+    return is_polymorphic
 
 def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_calling_positions, variant_calling_positions):
-
     with pysam.AlignmentFile(bam_file, "rb") as samfile:
         # truncate = True truncates overlapping reads to positions which are aligned to the ref
         # loop over columns of bam_file
         for pileup_column in samfile.pileup(truncate = True):
-            extract = extract_haplotype(pileup_column, variant_cutoff, use_variant_calling_positions, variant_calling_positions)
-            if extract:
+            variant = is_variant(pileup_column, use_variant_calling_positions, variant_calling_positions)
+            polymorphic = is_polymorphic_position(pileup_column, variant_cutoff)
+            if polymorphic | variant:
                 pos = pileup_column.reference_pos
                 # loop over reads per column
                 for pileup_read in pileup_column.pileups:
@@ -213,13 +226,13 @@ def get_filtered_haplotypes(haplotypes, min_qscore, regions_to_exclude, hardmask
                 haplotypes[haplotype_name]["position"].pop(i)
                 haplotypes[haplotype_name]["haplotype"].pop(i)
                 haplotypes[haplotype_name]["quality"].pop(i)
-            elif qual < min_qscore:
-                if hardmask:
-                    haplotypes[haplotype_name]["haplotype"][i] = "N"
-                else:
-                    base = haplotypes[haplotype_name]["haplotype"][i]
-                    masked_base = base.lower()
-                    haplotypes[haplotype_name]["haplotype"][i] = masked_base
+            # elif qual < min_qscore:
+            #    if hardmask:
+            #        haplotypes[haplotype_name]["haplotype"][i] = "N"
+            #    else:
+            #        base = haplotypes[haplotype_name]["haplotype"][i]
+            #        masked_base = base.lower()
+            #        haplotypes[haplotype_name]["haplotype"][i] = masked_base
                 
     return haplotypes
             
@@ -295,25 +308,6 @@ def exclude_pos(pos, regions_to_exclude):
     for range in regions_to_exclude:
         exclude = pos > range["start"] and pos < range["end"] or exclude
     return exclude
-
-def is_polymorphic_position(pileup_column, variant_cutoff):
-    variants = dict()
-    bases = pileup_column.get_query_sequences(add_indels = True)
-    n_bases = len(bases)
-    is_polymorphic = True
-    for base in bases:
-        if base in variants:
-            variants[base] += 1
-        else: 
-            variants[base] = 1
-    print(variants)
-    if len(variants) == 1:
-        return False
-    else:
-        for base in variants:
-            is_polymorphic = is_polymorphic & (variants[base] / n_bases >= variant_cutoff)
-            
-    return is_polymorphic
 
 def main(argv=sys.argv[1:]):
     """
