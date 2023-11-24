@@ -183,10 +183,11 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
         # truncate = True truncates overlapping reads to positions which are aligned to the ref
         # loop over columns of bam_file
         for pileup_column in samfile.pileup(truncate = True):
-            pos = pileup_column.reference_pos
+            # python is zero-based
+            pos = pileup_column.reference_pos + 1
             variant = is_variant(pos, use_variant_calling_positions, variant_calling_positions)
             polymorphic, variants = is_polymorphic_position(pileup_column, variant_cutoff)
-            
+                
             if variant and use_variant_calling_positions:
                 for pileup_read in pileup_column.pileups:
                     read = pileup_read.alignment
@@ -194,15 +195,15 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                     read_pos = pileup_read.query_position
 
                     if not(polymorphic) and len(variants) > 1:
-                            base = max(variants)
-                            if re.search("\+", base):
-                                base = re.sub("\+\d", "", base)
-                                qual = [70] * len(base)
-                            elif re.search("-", base):
-                                base = "-"
-                                qual = 70
-                            else:
-                                qual = 70
+                        base = max(variants)
+                        if re.search("\+", base):
+                            base = re.sub("\+\d", "", base)
+                            qual = [70] * len(base)
+                        elif re.search("-", base):
+                            base = "-"
+                            qual = 70
+                        else:
+                            qual = 70
                     else:
                         if pileup_read.indel >= 1:
                             indel_length = pileup_read.indel
@@ -220,7 +221,6 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                         else:
                             base = read.query_sequence[read_pos]
                             qual = read.query_qualities[read_pos] 
-                            
                     query_names[name]["haplotype"].append(base) 
                     query_names[name]["quality"].append(qual) 
                     query_names[name]["position"].append(pos)
