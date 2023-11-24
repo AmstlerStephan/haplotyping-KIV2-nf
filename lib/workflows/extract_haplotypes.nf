@@ -75,6 +75,6 @@ workflow EXTRACT_HAPLOTYPES_WF {
     
     MERGE_HAPLOTYPES(extracted_haplotypes_filtered, merge_haplotypes_py)
 
-    MULTIPLE_ALIGNMENT(MERGE_HAPLOTYPES.out.merged_haplotypes)
+    //MULTIPLE_ALIGNMENT(MERGE_HAPLOTYPES.out.merged_haplotypes)
     
 }

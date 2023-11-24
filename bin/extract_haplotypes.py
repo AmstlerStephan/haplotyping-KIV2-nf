@@ -141,6 +141,8 @@ def get_haplotypes(args):
     if filter_haplotypes:
         filtered_haplotypes = get_filtered_haplotypes(haplotypes, min_qscore, ranges_to_exclude, hardmask)
         write_haplotypes(filtered_haplotypes, output_format, output, "haplotypes_filtered")
+        write_stat_file(haplotypes, output, "haplotypes_filtered_stats")
+    
 
 def get_query_names(bam_file):
     query_names = dict()
@@ -230,11 +232,11 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
 def get_filtered_haplotypes(haplotypes, min_qscore, regions_to_exclude, hardmask):
     for haplotype_name in haplotypes:
         positions = haplotypes[haplotype_name].get("position").copy()
-        for pos in positions:
-            i = haplotypes[haplotype_name].get("position").index(pos)
+        for position in positions:
+            i = haplotypes[haplotype_name].get("position").index(position)
             qual = get_quality(haplotypes[haplotype_name].get("quality")[i])
             
-            if exclude_pos(pos, regions_to_exclude):
+            if exclude_pos(position, regions_to_exclude):
                 haplotypes[haplotype_name]["position"].pop(i)
                 haplotypes[haplotype_name]["haplotype"].pop(i)
                 haplotypes[haplotype_name]["quality"].pop(i)
@@ -318,7 +320,7 @@ def get_quality(qual):
 def exclude_pos(pos, regions_to_exclude):
     exclude = False
     for range in regions_to_exclude:
-        exclude = pos > range["start"] and pos < range["end"] or exclude
+        exclude = pos >= range["start"] and pos <= range["end"] or exclude
     return exclude
 
 def main(argv=sys.argv[1:]):

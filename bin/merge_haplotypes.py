@@ -149,10 +149,11 @@ def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_fil
                 
                 n_queries = len(query_info["reads"])
                 is_smaller_than_cluster_cutoff = n_queries <= cluster_cutoff
-                is_low_qual = not query_info["high_qual"]
+                is_low_qual = True
+                # is_low_qual = not query_info["high_qual"]
                 
                 if is_low_qual and is_smaller_than_cluster_cutoff:
-                    
+                    ### check for edit distance calculation!
                     result = edlib.align(
                         sequence, 
                         query_sequence, 
@@ -160,6 +161,7 @@ def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_fil
                         task="path",
                         k=max_dist
                     )
+                    print("{} sequence has {} distance to\n{}".format(sequence, result["editDistance"], query_sequence))
                     if result["editDistance"] > 0:
                         if sequence in close_sequences:
                             close_sequences[sequence].append(query_sequence)
@@ -194,7 +196,6 @@ def write_subreads(unique_reads, output_format, output, file_name):
         for i, sequence in enumerate(unique_reads.keys()):
             for sub_name, sub_sequence in unique_reads[sequence]["reads"].items():
                 name = "{}_{}".format(i, sub_name)
-                print("{} in {}".format(sub_name, sub_sequence))
                 write_fasta_read(name, sub_sequence, out_f)
 
                     
