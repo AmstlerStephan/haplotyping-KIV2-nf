@@ -161,7 +161,7 @@ def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_fil
                         task="path",
                         k=max_dist
                     )
-                    print("{} sequence has {} distance to\n{}".format(sequence, result["editDistance"], query_sequence))
+                    # print("{} sequence has {} distance to\n{}".format(sequence, result["editDistance"], query_sequence))
                     if result["editDistance"] > 0:
                         if sequence in close_sequences:
                             close_sequences[sequence].append(query_sequence)
