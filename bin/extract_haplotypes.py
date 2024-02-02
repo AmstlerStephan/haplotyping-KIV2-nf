@@ -206,9 +206,11 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                             qual = 70
                     else:
                         if pileup_read.indel >= 1:
-                            indel_length = pileup_read.indel
-                            bases = read.query_sequence[read_pos:read_pos + indel_length]
-                            quals = read.query_qualities[read_pos:read_pos + indel_length]
+                            # indel_length = pileup_read.indel
+                            # bases = read.query_sequence[read_pos:read_pos + indel_length]
+                            # quals = read.query_qualities[read_pos:read_pos + indel_length]
+                            bases = read.query_sequence[read_pos]
+                            quals = read.query_qualities[read_pos]
                             query_names[name]["haplotype"].append(bases)
                             query_names[name]["quality"].append(quals)
                             query_names[name]["position"].append(pos)
@@ -233,9 +235,11 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
 
                     # in case of indel a list is returned and joined with the existing list
                     if pileup_read.indel >= 1:
-                        indel_length = pileup_read.indel
-                        bases = read.query_sequence[read_pos:read_pos + indel_length]
-                        quals = read.query_qualities[read_pos:read_pos + indel_length]
+                        # indel_length = pileup_read.indel
+                        # bases = read.query_sequence[read_pos:read_pos + indel_length]
+                        # quals = read.query_qualities[read_pos:read_pos + indel_length]
+                        bases = read.query_sequence[read_pos]
+                        quals = read.query_qualities[read_pos]
                         query_names[name]["haplotype"].append(bases)
                         query_names[name]["quality"].append(quals)
                         query_names[name]["position"].append(pos)
