@@ -154,8 +154,8 @@ def get_query_names(bam_file):
                 quality = list())
     return query_names
 
-def is_variant_position(position, use_variant_calling_positions, positions):
-    return position in positions
+def is_variant_position(pos, positions):
+    return pos in positions
 
 
 # Takes all bases from the current line position and counts number of bases that occur in that column 
@@ -195,14 +195,14 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
             pos = pileup_column.reference_pos + 1
             polymorphic, variant = is_polymorphic_position(pileup_column, variant_cutoff)
             
-            if use_variant_calling_positions and is_variant_position(pos, use_variant_calling_positions, positions):
+            if use_variant_calling_positions and is_variant_position(pos, positions):
                     
                 for pileup_read in pileup_column.pileups:
                     
                     read = pileup_read.alignment
                     name = read.query_name
                     read_pos = pileup_read.query_position
-                    
+                                        
                     if not(polymorphic):
                         base = variant
                         if pileup_read.is_del:
@@ -217,6 +217,9 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                     else:
                         base = read.query_sequence[read_pos]
                         qual = read.query_qualities[read_pos] 
+                    
+                    if len(base) > 1:
+                        print("{} at {} with {}".format(name, pos, base))
                     
                     query_names[name]["haplotype"].append(base) 
                     query_names[name]["quality"].append(qual) 
@@ -252,7 +255,7 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                     query_names[name]["haplotype"].append(base) 
                     query_names[name]["quality"].append(qual) 
                     query_names[name]["position"].append(pos)
-                
+
     return query_names
 
 
