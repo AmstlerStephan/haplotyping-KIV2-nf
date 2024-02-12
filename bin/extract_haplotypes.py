@@ -203,8 +203,6 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                     name = read.query_name
                     read_pos = pileup_read.query_position
                     
-                    if pileup_read.is_refskip:
-                        print(name)
                     if not(polymorphic):
                         base = variant
                         if pileup_read.is_del:
