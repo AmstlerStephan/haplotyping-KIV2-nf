@@ -216,10 +216,10 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                         qual = 70
                     else:
                         base = read.query_sequence[read_pos]
-                        qual = read.query_qualities[read_pos] 
-                    
+                        qual = read.query_qualities[read_pos]
+                        
                     if len(base) > 1:
-                        print("{} at {} with {}".format(name, pos, base))
+                        print("{} at {} with {} and {} bases".format(name, pos, base, pileup_read.indel))
                     
                     query_names[name]["haplotype"].append(base) 
                     query_names[name]["quality"].append(qual) 
