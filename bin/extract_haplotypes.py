@@ -154,12 +154,8 @@ def get_query_names(bam_file):
                 quality = list())
     return query_names
 
-def is_variant(position, use_variant_calling_positions, variant_calling_positions):
-    if use_variant_calling_positions:
-        positions = pd.read_csv(variant_calling_positions, sep = "\t")["position"].to_list()
-        return position in positions
-    else:
-        return False
+def is_variant_position(position, use_variant_calling_positions, positions):
+    return position in positions
 
 
 # Takes all bases from the current line position and counts number of bases that occur in that column 
@@ -171,7 +167,6 @@ def is_polymorphic_position(pileup_column, variant_cutoff):
     is_polymorphic = True
     variant = None
     ## will not include the information about the next position
-    
     bases = pileup_column.get_query_sequences(add_indels = False)
     n_bases = len(bases)
     
@@ -181,6 +176,7 @@ def is_polymorphic_position(pileup_column, variant_cutoff):
         else: 
             variants[base] = 1
     
+    # get most abundant base
     variant = max(variants, key=variants.get)
     is_polymorphic = all(variants[base] / n_bases >= variant_cutoff for base in variants)
              
@@ -188,23 +184,31 @@ def is_polymorphic_position(pileup_column, variant_cutoff):
 
 def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_calling_positions, variant_calling_positions):
     with pysam.AlignmentFile(bam_file, "rb") as samfile:
-        # truncate = True truncates overlapping reads to positions which are aligned to the ref
+        
+        # Put here to load positions only once
+        if use_variant_calling_positions:
+            positions = pd.read_csv(variant_calling_positions, sep = "\t")["position"].to_list()
+        
         # loop over columns of bam_file
-        for pileup_column in samfile.pileup(truncate = True):
+        for pileup_column in samfile.pileup(min_base_quality = 0):
             # python is zero-based
             pos = pileup_column.reference_pos + 1
-            variant = is_variant(pos, use_variant_calling_positions, variant_calling_positions)
             polymorphic, variant = is_polymorphic_position(pileup_column, variant_cutoff)
-                
-            if variant and use_variant_calling_positions:
+            
+            if use_variant_calling_positions and is_variant_position(pos, use_variant_calling_positions, positions):
+                    
                 for pileup_read in pileup_column.pileups:
+                    
                     read = pileup_read.alignment
                     name = read.query_name
                     read_pos = pileup_read.query_position
                     
+                    if pileup_read.is_refskip:
+                        print(name)
                     if not(polymorphic):
                         base = variant
                         if pileup_read.is_del:
+                            base = base.lower()
                             qual = 70
                         else:
                             qual = read.query_qualities[read_pos]
