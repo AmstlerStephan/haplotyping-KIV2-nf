@@ -1,20 +1,28 @@
 process EXTRACT_HAPLOTYPES {
-    publishDir "${params.output}/${run}/${barcode}/haplotype/", pattern: "*fasta", mode: 'copy'
-    publishDir "${params.output}/${run}/${barcode}/haplotype/stats", pattern: "*tsv", mode: 'copy'
+    publishDir "${params.output}/${sample}/haplotyping/", mode: 'copy', pattern: "*${params.output_format}"
+    publishDir "${params.output}/${sample}/stats/", mode: 'copy', pattern: "haplotype_stats.tsv"
+
   input:
-    tuple val( run ), val( barcode ), path( fasta_aligned ), path( sample_sheet )
-    path extract_haplotypes_R
+    tuple val( sample ), path( bam_file ), path( bam_file_index )
+    path variant_calling_positions
+    path extract_haplotypes_py
   output:
-    tuple val( "${run}" ), val( "${barcode}" ), path( "*haplotype.fasta" ), emit: haplotype
-    path "*haplotype.tsv"
+    tuple val( "${sample}" ), path( "haplotypes_filtered.${params.output_format}" ), emit: extracted_haplotypes
+    path "haplotypes.${params.output_format}"
+    path "haplotype_stats.tsv"
   script:
+    def hardmask = params.hardmask ? "--hardmask" : ""
+    def use_variant_calling_positions = params.use_variant_calling_positions ? "--use_variant_calling_positions" : ""
+    def variant_calling_positions = params.use_variant_calling_positions ? "--variant_calling_positions ${variant_calling_positions}" : ""
   """
-    Rscript ${extract_haplotypes_R} \
-    --sample_sheet ${sample_sheet} \
-    --run ${run} \
-    --barcode ${barcode} \
-    --umi_cutoff_R9 ${params.umi_cutoff_R9} \
-    --umi_cutoff_V14 ${params.umi_cutoff_V14} \
-    --aligned_fasta ${fasta_aligned}
-      """
+    python ${extract_haplotypes_py} \
+      --bam_file ${bam_file} \
+      --ranges_to_exclude ${params.ranges_to_exclude} \
+      --min_qscore ${params.min_qscore} \
+      $hardmask \
+      $use_variant_calling_positions \
+      $variant_calling_positions \
+      --output_format ${params.output_format} \
+      -o ./
+  """
 }

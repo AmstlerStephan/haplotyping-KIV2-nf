@@ -64,8 +64,9 @@ if(params.help){
 // PRINT VERSION AND EXIT
 if(params.version){
     println """\
+
          ===============================================
-          E C S E Q - t e m p l a t e   P I P E L I N E
+          Nextflow UMI haplotyping Pipeline
          ===============================================
          ~ version ${workflow.manifest.version}
     """
@@ -76,7 +77,7 @@ if(params.version){
 // PRINT STANDARD LOGGING INFO
 log.info ""
 log.info "         ==============================================="
-log.info "          E C S E Q - t e m p l a t e   P I P E L I N E"
+log.info "          U M I - H A P L O T Y P I N G"
 if(params.debug){
 log.info "         (debug mode enabled)"
 log.info "         ===============================================" }
@@ -94,11 +95,7 @@ include {EXTRACT_HAPLOTYPES_WF} from './lib/workflows/extract_haplotypes.nf'
 
 // MAIN WORKFLOW 
 workflow {
-
-    // call sub-workflows eg. WORKFLOW(Channel1, Channel2, Channel3, etc.)
-    main:
         EXTRACT_HAPLOTYPES_WF()
-
 }
 
 

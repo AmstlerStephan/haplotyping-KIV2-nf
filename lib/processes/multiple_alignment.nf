@@ -1,21 +1,17 @@
+mafft_fasta="merged_haplotypes_ma.fasta"
 process MULTIPLE_ALIGNMENT {
-    publishDir "${params.output}/${run}/${barcode}/fasta/", mode: 'copy'
+    publishDir "${params.output}/${sample}/mafft/tree", pattern: "*.tree", mode: 'copy'
+    publishDir "${params.output}/${sample}/mafft", pattern: "${mafft_fasta}", mode: 'copy'
   input:
-    tuple val( run ), val( barcode ), path( fasta_clipped )
+    tuple val( sample ), path( merged_haplotypes )
   output:
-    tuple val( "${run}" ), val( "${barcode}" ), path( "*multiple_alignment.fasta" ), emit: fasta_aligned
+    path "*.tree"
+    path "${mafft_fasta}"
   script:
   """
-    mafft \
+    ginsi \
     --thread ${params.threads} \
-    --anysymbol \
-    --bl 62 \
-    --op 1.53 \
-    --ep 0.123 \
-    --reorder \
-    --retree 2 \
     --treeout \
-    --maxiterate 2 \
-    ${fasta_clipped} > multiple_alignment.fasta
+    ${merged_haplotypes} > ${mafft_fasta}
   """
 }
