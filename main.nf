@@ -1,6 +1,3 @@
-Certainly! Here's a modified version of the `main.nf` script adapted to use the parameters from the provided `nextflow.config` file:
-
-```nextflow
 #!/usr/bin/env nextflow
 
 // ENABLE DSL2
@@ -90,6 +87,3 @@ workflow.onComplete {
         ["bash", "${baseDir}/bin/clean.sh", "${workflow.sessionId}"].execute()
     }
 }
-```
-
-This script now includes the parameters from the `nextflow.config` file and adapts the help and version sections accordingly. Make sure to adjust it further based on your specific pipeline requirements.
