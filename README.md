@@ -43,6 +43,46 @@ Replace `<path_to_input_directory>` and `<path_to_output_directory>` with the ac
 ## Configuration
 - The workflow may have configurable parameters in the `nextflow.config` file. Check for customization options there.
 
+### Basic Parameters
+
+- **help**: A boolean flag indicating whether to display help information. Default is `false`.
+  
+- **version**: A boolean flag indicating whether to display the workflow version. Default is `false`.
+  
+- **debug**: A boolean flag enabling or disabling debug mode. When set to `true`, additional debugging information may be provided during workflow execution. Default is `false`.
+
+### Input/Output Parameters
+
+- **input**: The directory containing input data for the workflow. This parameter is required for the workflow to locate and process input files.
+
+- **ont_pl_dir**: The directory associated with the consensus reads obtained from the https://github.com/genepi/umi-pipeline-nf analysis workflow. Default is `null`.
+
+- **output**: The directory where the workflow will write its output. This parameter is required for storing the results of the haplotyping workflow.
+
+- **variant_calling_positions**: A file specifying variant calling positions. If provided, the workflow uses this file during haplotype extraction.
+
+- **bam_pattern**: The pattern used to match BAM files within the input directory. Default is `"masked_consensus.bam"`.
+
+- **cluster_stats_pattern**: The pattern used to match cluster statistics files within the input directory. Default is `"split_cluster_stats.tsv"`.
+
+- **min_reads_per_cluster**: Minimum number of reads per cluster to be considered during processing. Default is `10`.
+
+- **max_reads_per_cluster**: Maximum number of reads per cluster to be considered during processing. Default is `200`.
+
+- **max_edit_distance**: Maximum edit distance allowed during merging of haplotype clusters. Default is `2`.
+
+- **use_variant_calling_positions**: A boolean flag indicating whether to use variant calling positions. If `true`, the workflow considers the `variant_calling_positions` file.
+
+- **ranges_to_exclude**: A comma-separated list of ranges to exclude during processing. Default is `"2472,2506"`.
+
+- **min_qscore**: The minimum quality score required during processing. Default is `45`.
+
+- **output_format**: The output format for haplotype results. Default is `"fasta"`.
+
+## Other Parameters
+
+- **threads**: The number of threads used during workflow execution. It is set to `(Runtime.runtime.availableProcessors() - 1)` by default.
+
 ## Output
 - The workflow generates output files, including filtered BAM files, extracted haplotypes, and merged haplotype information.
 
