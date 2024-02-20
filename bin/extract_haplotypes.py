@@ -154,76 +154,77 @@ def get_query_names(bam_file):
                 quality = list())
     return query_names
 
-def is_variant(position, use_variant_calling_positions, variant_calling_positions):
-    if use_variant_calling_positions:
-        positions = pd.read_csv(variant_calling_positions, sep = "\t")["position"].to_list()
-        return position in positions
-    else:
-        return False
+def is_variant_position(pos, positions):
+    return pos in positions
 
+
+# Takes all bases from the current line position and counts number of bases that occur in that column 
+# If there are no more than one type of base occuring, the position is not polymorphic and the bases are returned 
+# Else if there are more than one type of bases it will check whether the variant base occurs more often than the set threshold 
+# if so then the position is polymorphic
 def is_polymorphic_position(pileup_column, variant_cutoff):
     variants = dict()
-    bases = pileup_column.get_query_sequences(add_indels = True)
-    n_bases = len(bases)
     is_polymorphic = True
+    variant = None
+    ## will not include the information about the next position
+    bases = pileup_column.get_query_sequences(add_indels = False)
+    n_bases = len(bases)
+    
     for base in bases:
         if base in variants:
             variants[base] += 1
         else: 
             variants[base] = 1
-    if len(variants) == 1:
-        return False, variants 
-    else:
-        for base in variants:
-            is_polymorphic = is_polymorphic & (variants[base] / n_bases >= variant_cutoff)
-    return is_polymorphic, variants
+    
+    # get most abundant base
+    variant = max(variants, key=variants.get)
+    is_polymorphic = all(variants[base] / n_bases >= variant_cutoff for base in variants)
+             
+    return is_polymorphic, variant
 
 def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_calling_positions, variant_calling_positions):
     with pysam.AlignmentFile(bam_file, "rb") as samfile:
-        # truncate = True truncates overlapping reads to positions which are aligned to the ref
+        
+        # Put here to load positions only once
+        if use_variant_calling_positions:
+            positions = pd.read_csv(variant_calling_positions, sep = "\t")["position"].to_list()
+        
         # loop over columns of bam_file
-        for pileup_column in samfile.pileup(truncate = True):
+        for pileup_column in samfile.pileup(min_base_quality = 0):
             # python is zero-based
             pos = pileup_column.reference_pos + 1
-            variant = is_variant(pos, use_variant_calling_positions, variant_calling_positions)
-            polymorphic, variants = is_polymorphic_position(pileup_column, variant_cutoff)
-                
-            if variant and use_variant_calling_positions:
+            polymorphic, variant = is_polymorphic_position(pileup_column, variant_cutoff)
+            
+            if use_variant_calling_positions and is_variant_position(pos, positions):
+                    
                 for pileup_read in pileup_column.pileups:
+                    
                     read = pileup_read.alignment
                     name = read.query_name
                     read_pos = pileup_read.query_position
-
-                    if not(polymorphic) and len(variants) > 1:
-                        base = max(variants)
-                        if re.search("\+", base):
-                            base = re.sub("\+\d", "", base)
-                            qual = [70] * len(base)
-                        elif re.search("-", base):
-                            base = "-"
-                            qual = 70
-                        else:
-                            qual = 70
-                    else:
-                        if pileup_read.indel >= 1:
-                            indel_length = pileup_read.indel
-                            bases = read.query_sequence[read_pos:read_pos + indel_length]
-                            quals = read.query_qualities[read_pos:read_pos + indel_length]
-                            query_names[name]["haplotype"].append(bases)
-                            query_names[name]["quality"].append(quals)
-                            query_names[name]["position"].append(pos)
-                            continue
-                            
-                        # deletion is annotated as - and qual set to 70 (might adjust)
+                                        
+                    if not(polymorphic):
+                        base = variant
                         if pileup_read.is_del:
-                            base = "-"
+                            base = base.lower()
                             qual = 70
                         else:
-                            base = read.query_sequence[read_pos]
-                            qual = read.query_qualities[read_pos] 
+                            qual = read.query_qualities[read_pos]
+                    # deletion is annotated as - and qual set to 70 (might adjust)
+                    elif pileup_read.is_del:
+                        base = "-"
+                        qual = 70
+                    else:
+                        base = read.query_sequence[read_pos]
+                        qual = read.query_qualities[read_pos]
+                        
+                    if len(base) > 1:
+                        print("{} at {} with {} and {} bases".format(name, pos, base, pileup_read.indel))
+                    
                     query_names[name]["haplotype"].append(base) 
                     query_names[name]["quality"].append(qual) 
                     query_names[name]["position"].append(pos)
+
             elif polymorphic and not(use_variant_calling_positions):
                 # loop over reads per column
                 for pileup_read in pileup_column.pileups:
@@ -233,12 +234,14 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
 
                     # in case of indel a list is returned and joined with the existing list
                     if pileup_read.indel >= 1:
-                        indel_length = pileup_read.indel
-                        bases = read.query_sequence[read_pos:read_pos + indel_length]
-                        quals = read.query_qualities[read_pos:read_pos + indel_length]
-                        query_names[name]["haplotype"].append(bases)
-                        query_names[name]["quality"].append(quals)
-                        query_names[name]["position"].append(pos)
+                        # indel_length = pileup_read.indel
+                        # bases = read.query_sequence[read_pos:read_pos + indel_length]
+                        # quals = read.query_qualities[read_pos:read_pos + indel_length]
+                        #bases = read.query_sequence[read_pos]
+                        #quals = read.query_qualities[read_pos]
+                        #query_names[name]["haplotype"].append(bases)
+                        #query_names[name]["quality"].append(quals)
+                        #query_names[name]["position"].append(pos)
                         continue
                     
                     # deletion is annotated as - and qual set to 70 (might adjust)
@@ -252,7 +255,7 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                     query_names[name]["haplotype"].append(base) 
                     query_names[name]["quality"].append(qual) 
                     query_names[name]["position"].append(pos)
-        
+
     return query_names
 
 

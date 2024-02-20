@@ -3,86 +3,57 @@
 // ENABLE DSL2
 nextflow.enable.dsl=2
 
-// PRINT HELP AND EXIT
-if(params.help){
+// Print help and exit
+if (params.help) {
     println """\
+    ===============================================
+    U M I   H A P L O T Y P I N G   P I P E L I N E
+    ===============================================
+    ~ version ${workflow.manifest.version}
 
-         ===============================================
-          E C S E Q - t e m p l a t e   P I P E L I N E
-         ===============================================
-         ~ version ${workflow.manifest.version}
+    Usage:
+    nextflow run AmstlerStephan/haplotyping-KIV2-nf [OPTIONS]...
 
-         Usage: 
-              nextflow run ecseq/dnaseq [OPTIONS]...
+    Options:
+    --input [path/to/input/dir]                       [REQUIRED] Provide the directory containing input BAM files.
+    --ont_pl_dir [path/to/ont_pl_dir]                 [REQUIRED] Provide the directory associated with ONT pipeline.
+    --output [path/to/output/dir]                     [REQUIRED] Specify the directory where the pipeline will write its output.
+    --variant_calling_positions [path/to/positions]   Specify the path to the file specifying variant calling positions.
+    --bam_pattern [pattern]                           Pattern to match BAM files within the input directory. Default: "masked_consensus.bam"
+    --cluster_stats_pattern [pattern]                 Pattern to match cluster statistics files. Default: "split_cluster_stats.tsv"
+    --min_reads_per_cluster [number]                  Minimum number of reads per cluster. Default: 10
+    --max_reads_per_cluster [number]                  Maximum number of reads per cluster. Default: 200
+    --max_edit_distance [number]                      Maximum edit distance allowed. Default: 2
+    --use_variant_calling_positions                   Use variant calling positions. Default: false
+    --ranges_to_exclude [ranges]                      Comma-separated list of ranges to exclude. Default: "2472,2506"
+    --min_qscore [number]                             Minimum quality score required. Default: 45
+    --output_format [format]                          Output format for haplotype results. Default: "fasta"
 
-         Options: GENERAL
-              --input [path/to/input/dir]     [REQUIRED] Provide the directory containing fastq file(s) in "*{1,2}.fastq.gz" format
-
-              --reference [path/to/ref.fa]    [REQUIRED] Provide the path to the reference genome in fasta format
-
-              --output [STR]                  A string that can be given to name the output directory. [default: "."]
-
-
-         Options: MODIFIERS
-              --SE                            Indicate to the pipeline whether fastq files are SE reads in "*.fastq.gz" format. [default: off]
-
-              --FastQC                        Generate FastQC report of trimmed reads. [default: off]
-
-              --bamQC                         Generate bamQC report of alignments. [default: off]
-
-              --keepReads                     Keep trimmed fastq reads. [default: off]
-
-
-         Options: TRIMMING
-              --forward                       Forward adapter sequence. [default: "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG"]
-
-              --reverse                       Reverse adapter sequence. [default: "ACACTCTTTCCCTACACGACGCTCTTCCGATCT"]
-
-              --minQual                       Minimum base quality threshold. [default: 20]
-
-              --minLeng                       Minimum read length threshold. [default: 25]
-
-              --minOver                       Minimum overlap threshold. [default: 3]
-
-
-         Options: ADDITIONAL
-              --help                          Display this help information and exit
-              --version                       Display the current pipeline version and exit
-              --debug                         Run the pipeline in debug mode    
-
-
-         Example: 
-              nextflow run ecseq/dnaseq \
-              --input /path/to/input/dir --reference /path/to/genome.fa \
-              --FastQC --bamQC --keepReads
-
+    --threads [number]                                Number of threads used during execution. Default: (availableProcessors() - 1)
     """
-    ["bash", "${baseDir}/bin/clean.sh", "${workflow.sessionId}"].execute()
     exit 0
 }
 
-// PRINT VERSION AND EXIT
-if(params.version){
+// Print version and exit
+if (params.version) {
     println """\
-
-         ===============================================
-          Nextflow UMI haplotyping Pipeline
-         ===============================================
-         ~ version ${workflow.manifest.version}
+    ===============================================
+    U M I   H A P L O T Y P I N G   P I P E L I N E
+    ===============================================
+    ~ version ${workflow.manifest.version}
     """
-    ["bash", "${baseDir}/bin/clean.sh", "${workflow.sessionId}"].execute()
     exit 0
 }
 
-// PRINT STANDARD LOGGING INFO
+// Print standard logging info
 log.info ""
 log.info "         ==============================================="
 log.info "          U M I - H A P L O T Y P I N G"
 if(params.debug){
-log.info "         (debug mode enabled)"
-log.info "         ===============================================" }
+    log.info "         (debug mode enabled)"
+    log.info "         ===============================================" }
 else {
-log.info "         ===============================================" }
+    log.info "         ===============================================" }
 log.info "         ~ version ${workflow.manifest.version}"
 log.info ""
 log.info "         input dir    : ${params.input}"
@@ -93,25 +64,13 @@ log.info ""
 
 include {EXTRACT_HAPLOTYPES_WF} from './lib/workflows/extract_haplotypes.nf'
 
-// MAIN WORKFLOW 
+// Main Workflow 
 workflow {
-        EXTRACT_HAPLOTYPES_WF()
+    EXTRACT_HAPLOTYPES_WF()
 }
 
-
-//////////////////
-// END PIPELINE //
-//////////////////
-
-// WORKFLOW TRACING # what to display when the pipeline finishes
-// eg. with errors
-workflow.onError {
-    log.info "Oops... Pipeline execution stopped with the following message: ${workflow.errorMessage}"
-}
-
-// eg. in general
+// Workflow tracing - what to display when the pipeline finishes
 workflow.onComplete {
-
     log.info ""
     log.info "         Pipeline execution summary"
     log.info "         ---------------------------"
@@ -123,7 +82,8 @@ workflow.onComplete {
     log.info "         Error report : ${workflow.errorReport ?: "-"}"
     log.info ""
 
-    // run a small clean-up script to remove "work" directory after successful completion 
+    // Run a small clean-up script to remove "work" directory after successful completion 
     if (!params.debug && workflow.success) {
-        ["bash", "${baseDir}/bin/clean.sh", "${workflow.sessionId}"].execute() }
+        ["bash", "${baseDir}/bin/clean.sh", "${workflow.sessionId}"].execute()
+    }
 }
