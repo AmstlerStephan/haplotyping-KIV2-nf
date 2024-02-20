@@ -1,6 +1,6 @@
 process EXTRACT_HAPLOTYPES {
     publishDir "${params.output}/${sample}/haplotyping/", mode: 'copy', pattern: "*${params.output_format}"
-    publishDir "${params.output}/${sample}/stats/", mode: 'copy', pattern: "haplotype_stats.tsv"
+    publishDir "${params.output}/${sample}/stats/", mode: 'copy', pattern: "*stats.tsv"
 
   input:
     tuple val( sample ), path( bam_file ), path( bam_file_index )
@@ -9,7 +9,7 @@ process EXTRACT_HAPLOTYPES {
   output:
     tuple val( "${sample}" ), path( "haplotypes_filtered.${params.output_format}" ), emit: extracted_haplotypes
     path "haplotypes.${params.output_format}"
-    path "haplotype_stats.tsv"
+    path "*stats.tsv"
   script:
     def hardmask = params.hardmask ? "--hardmask" : ""
     def use_variant_calling_positions = params.use_variant_calling_positions ? "--use_variant_calling_positions" : ""

@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import re
 
 import pysam
 import pandas as pd
@@ -140,6 +141,8 @@ def get_haplotypes(args):
     if filter_haplotypes:
         filtered_haplotypes = get_filtered_haplotypes(haplotypes, min_qscore, ranges_to_exclude, hardmask)
         write_haplotypes(filtered_haplotypes, output_format, output, "haplotypes_filtered")
+        write_stat_file(haplotypes, output, "haplotypes_filtered_stats")
+    
 
 def get_query_names(bam_file):
     query_names = dict()
@@ -151,10 +154,10 @@ def get_query_names(bam_file):
                 quality = list())
     return query_names
 
-def is_variant(pileup_column, use_variant_calling_positions, variant_calling_positions):
+def is_variant(position, use_variant_calling_positions, variant_calling_positions):
     if use_variant_calling_positions:
         positions = pd.read_csv(variant_calling_positions, sep = "\t")["position"].to_list()
-        return pileup_column.reference_pos in positions
+        return position in positions
     else:
         return False
 
@@ -169,28 +172,65 @@ def is_polymorphic_position(pileup_column, variant_cutoff):
         else: 
             variants[base] = 1
     if len(variants) == 1:
-        return False
+        return False, variants 
     else:
         for base in variants:
             is_polymorphic = is_polymorphic & (variants[base] / n_bases >= variant_cutoff)
-    print(variants)
-    return is_polymorphic
+    return is_polymorphic, variants
 
 def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_calling_positions, variant_calling_positions):
     with pysam.AlignmentFile(bam_file, "rb") as samfile:
         # truncate = True truncates overlapping reads to positions which are aligned to the ref
         # loop over columns of bam_file
         for pileup_column in samfile.pileup(truncate = True):
-            variant = is_variant(pileup_column, use_variant_calling_positions, variant_calling_positions)
-            polymorphic = is_polymorphic_position(pileup_column, variant_cutoff)
-            if polymorphic | variant:
-                pos = pileup_column.reference_pos
+            # python is zero-based
+            pos = pileup_column.reference_pos + 1
+            variant = is_variant(pos, use_variant_calling_positions, variant_calling_positions)
+            polymorphic, variants = is_polymorphic_position(pileup_column, variant_cutoff)
+                
+            if variant and use_variant_calling_positions:
+                for pileup_read in pileup_column.pileups:
+                    read = pileup_read.alignment
+                    name = read.query_name
+                    read_pos = pileup_read.query_position
+
+                    if not(polymorphic) and len(variants) > 1:
+                        base = max(variants)
+                        if re.search("\+", base):
+                            base = re.sub("\+\d", "", base)
+                            qual = [70] * len(base)
+                        elif re.search("-", base):
+                            base = "-"
+                            qual = 70
+                        else:
+                            qual = 70
+                    else:
+                        if pileup_read.indel >= 1:
+                            indel_length = pileup_read.indel
+                            bases = read.query_sequence[read_pos:read_pos + indel_length]
+                            quals = read.query_qualities[read_pos:read_pos + indel_length]
+                            query_names[name]["haplotype"].append(bases)
+                            query_names[name]["quality"].append(quals)
+                            query_names[name]["position"].append(pos)
+                            continue
+                            
+                        # deletion is annotated as - and qual set to 70 (might adjust)
+                        if pileup_read.is_del:
+                            base = "-"
+                            qual = 70
+                        else:
+                            base = read.query_sequence[read_pos]
+                            qual = read.query_qualities[read_pos] 
+                    query_names[name]["haplotype"].append(base) 
+                    query_names[name]["quality"].append(qual) 
+                    query_names[name]["position"].append(pos)
+            elif polymorphic and not(use_variant_calling_positions):
                 # loop over reads per column
                 for pileup_read in pileup_column.pileups:
                     read = pileup_read.alignment
+                    name = read.query_name
                     read_pos = pileup_read.query_position
-                    name = read.query_name  
-                    
+
                     # in case of indel a list is returned and joined with the existing list
                     if pileup_read.indel >= 1:
                         indel_length = pileup_read.indel
@@ -208,21 +248,22 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                     else:
                         base = read.query_sequence[read_pos]
                         qual = read.query_qualities[read_pos]
-                    
+                        
                     query_names[name]["haplotype"].append(base) 
                     query_names[name]["quality"].append(qual) 
                     query_names[name]["position"].append(pos)
+        
     return query_names
 
 
 def get_filtered_haplotypes(haplotypes, min_qscore, regions_to_exclude, hardmask):
     for haplotype_name in haplotypes:
         positions = haplotypes[haplotype_name].get("position").copy()
-        for pos in positions:
-            i = haplotypes[haplotype_name].get("position").index(pos)
+        for position in positions:
+            i = haplotypes[haplotype_name].get("position").index(position)
             qual = get_quality(haplotypes[haplotype_name].get("quality")[i])
             
-            if exclude_pos(pos, regions_to_exclude):
+            if exclude_pos(position, regions_to_exclude):
                 haplotypes[haplotype_name]["position"].pop(i)
                 haplotypes[haplotype_name]["haplotype"].pop(i)
                 haplotypes[haplotype_name]["quality"].pop(i)
@@ -306,7 +347,7 @@ def get_quality(qual):
 def exclude_pos(pos, regions_to_exclude):
     exclude = False
     for range in regions_to_exclude:
-        exclude = pos > range["start"] and pos < range["end"] or exclude
+        exclude = pos >= range["start"] and pos <= range["end"] or exclude
     return exclude
 
 def main(argv=sys.argv[1:]):
