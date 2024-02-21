@@ -34,6 +34,7 @@ bam_file_paths
         tuple ( barcode, bam_file_path)
 }
 .set { bam_files }
+.collect()
 
 cluster_stats_paths
 .map { 
@@ -42,6 +43,7 @@ cluster_stats_paths
         tuple ( barcode, cluster_stats_path)
 }
 .set { cluster_stats }
+.collect()
 
 bam_file_index_paths
 .map { 
@@ -50,6 +52,7 @@ bam_file_index_paths
         tuple ( barcode, bam_file_index_path)
 }
 .set { bam_file_indexes }
+.collect()
 
 // Use collect to wait for all channels to be populated before proceeding
 collect bam_files, bam_file_indexes, cluster_stats
