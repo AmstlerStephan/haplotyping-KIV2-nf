@@ -51,6 +51,8 @@ bam_file_index_paths
 }
 .set { bam_file_indexes }
 
+// Use collect to wait for all channels to be populated before proceeding
+collect bam_files, bam_file_indexes, cluster_stats
 
 bam_files
 .join(bam_file_indexes, remainder: false)
@@ -62,7 +64,6 @@ include {EXTRACT_HAPLOTYPES} from '../processes/extract_haplotypes.nf'
 include {MERGE_HAPLOTYPES} from '../processes/merge_haplotypes.nf'
 include {MULTIPLE_ALIGNMENT} from '../processes/multiple_alignment.nf'
 include {FILTER_BAM} from '../processes/filter_bam.nf'
-//include {FILTER_BAM} from '../processes/filter_bam_2.nf'
 
 workflow EXTRACT_HAPLOTYPES_WF {
 
