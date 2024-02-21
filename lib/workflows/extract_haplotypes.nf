@@ -38,7 +38,6 @@ bam_file_paths
         barcode = (bam_file_path =~ /barcode\d*/)[0]
         tuple ( barcode, bam_file_path)
 }
-.take(params.number_of_samples)
 .set { bam_files }
 
 cluster_stats_paths
@@ -47,7 +46,6 @@ cluster_stats_paths
         barcode = (cluster_stats_path =~ /barcode\d*/)[0]
         tuple ( barcode, cluster_stats_path)
 }
-.take(params.number_of_samples)
 .set { cluster_stats }
 
 bam_file_index_paths
@@ -56,7 +54,6 @@ bam_file_index_paths
         barcode = (bam_file_index_path =~ /barcode\d*/)[0]
         tuple ( barcode, bam_file_index_path)
 }
-.take(params.number_of_samples)
 .set { bam_file_indexes }
 
 
