@@ -56,10 +56,9 @@ bam_file_index_paths
 }
 .set { bam_file_indexes }
 
-
 bam_files
-.join(bam_file_indexes, failOnMismatch: true)
-.join(cluster_stats, failOnMismatch: true)
+.join(bam_file_indexes, remainder: false)
+.join(cluster_stats, remainder: false)
 .set { bam_stats_tuples }
 
 
