@@ -167,7 +167,7 @@ def is_polymorphic_position(pileup_column, variant_cutoff):
     is_polymorphic = True
     variant = None
     ## will not include the information about the next position
-    bases = pileup_column.get_query_sequences(add_indels = False)
+    bases = pileup_column.get_query_sequences(add_indels = True)
     n_bases = len(bases)
     
     for base in bases:
@@ -178,6 +178,10 @@ def is_polymorphic_position(pileup_column, variant_cutoff):
     
     # get most abundant base
     variant = max(variants, key=variants.get)
+    # remove insertions
+    if len(variant) > 1:
+        variant = variant[0]
+        
     is_polymorphic = all(variants[base] / n_bases >= variant_cutoff for base in variants)
              
     return is_polymorphic, variant
@@ -212,15 +216,12 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                             qual = read.query_qualities[read_pos]
                     # deletion is annotated as - and qual set to 70 (might adjust)
                     elif pileup_read.is_del:
-                        base = "-"
+                        base = "*"
                         qual = 70
                     else:
                         base = read.query_sequence[read_pos]
                         qual = read.query_qualities[read_pos]
-                        
-                    if len(base) > 1:
-                        print("{} at {} with {} and {} bases".format(name, pos, base, pileup_read.indel))
-                    
+
                     query_names[name]["haplotype"].append(base) 
                     query_names[name]["quality"].append(qual) 
                     query_names[name]["position"].append(pos)
@@ -246,7 +247,7 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                     
                     # deletion is annotated as - and qual set to 70 (might adjust)
                     if pileup_read.is_del:
-                        base = "-"
+                        base = "*"
                         qual = 70
                     else:
                         base = read.query_sequence[read_pos]
