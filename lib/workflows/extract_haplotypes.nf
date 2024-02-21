@@ -23,9 +23,14 @@ if (params.use_variant_calling_positions) {
 }
 
 // STAGE CHANNELS
-bam_file_paths = Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}", type: "file")
-bam_file_index_paths = Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}.bai", type: "file")
-cluster_stats_paths = Channel.fromPath("${params.input}/barcode*/stats/raw/${params.cluster_stats_pattern}", type: "file")
+bam_file_paths = 
+Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}", type: "file")
+
+bam_file_index_paths = 
+Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}.bai", type: "file")
+
+cluster_stats_paths = 
+Channel.fromPath("${params.input}/barcode*/stats/raw/${params.cluster_stats_pattern}", type: "file")
 
 bam_file_paths
 .map { 
@@ -33,8 +38,8 @@ bam_file_paths
         barcode = (bam_file_path =~ /barcode\d*/)[0]
         tuple ( barcode, bam_file_path)
 }
+.take(params.number_of_samples)
 .set { bam_files }
-.collect()
 
 cluster_stats_paths
 .map { 
@@ -42,8 +47,8 @@ cluster_stats_paths
         barcode = (cluster_stats_path =~ /barcode\d*/)[0]
         tuple ( barcode, cluster_stats_path)
 }
+.take(params.number_of_samples)
 .set { cluster_stats }
-.collect()
 
 bam_file_index_paths
 .map { 
@@ -51,15 +56,13 @@ bam_file_index_paths
         barcode = (bam_file_index_path =~ /barcode\d*/)[0]
         tuple ( barcode, bam_file_index_path)
 }
+.take(params.number_of_samples)
 .set { bam_file_indexes }
-.collect()
 
-// Use collect to wait for all channels to be populated before proceeding
-collect bam_files, bam_file_indexes, cluster_stats
 
 bam_files
-.join(bam_file_indexes, remainder: false)
-.join(cluster_stats, remainder: false)
+.join(bam_file_indexes, failOnMismatch: true)
+.join(cluster_stats, failOnMismatch: true)
 .set { bam_stats_tuples }
 
 
