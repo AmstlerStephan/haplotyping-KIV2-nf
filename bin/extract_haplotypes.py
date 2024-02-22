@@ -111,6 +111,9 @@ def parse_args(argv):
 
     return args
 
+def get_del():
+    return "-"
+
 def ranges(query_range):
     range = dict()
     try:
@@ -164,7 +167,7 @@ def is_variant_position(pos, positions):
 # if so then the position is polymorphic
 def is_polymorphic_position(pileup_column, variant_cutoff):
     variants = dict()
-    is_polymorphic = True
+    is_polymorphic = False
     variant = None
     ## will not include the information about the next position
     bases = pileup_column.get_query_sequences(add_indels = True)
@@ -176,14 +179,18 @@ def is_polymorphic_position(pileup_column, variant_cutoff):
         else: 
             variants[base] = 1
     
+    if len(variants) > 1:
+        is_polymorphic = all(variants[base] / n_bases >= variant_cutoff for base in variants)
+
     # get most abundant base
     variant = max(variants, key=variants.get)
+
     # remove insertions
     if len(variant) > 1:
         variant = variant[0]
-        
-    is_polymorphic = all(variants[base] / n_bases >= variant_cutoff for base in variants)
-             
+    if variant == "*":
+        variant = get_del()
+
     return is_polymorphic, variant
 
 def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_calling_positions, variant_calling_positions):
@@ -216,7 +223,7 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                             qual = read.query_qualities[read_pos]
                     # deletion is annotated as - and qual set to 70 (might adjust)
                     elif pileup_read.is_del:
-                        base = "*"
+                        base = get_del()
                         qual = 70
                     else:
                         base = read.query_sequence[read_pos]
@@ -235,19 +242,22 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
 
                     # in case of indel a list is returned and joined with the existing list
                     if pileup_read.indel >= 1:
-                        # indel_length = pileup_read.indel
-                        # bases = read.query_sequence[read_pos:read_pos + indel_length]
-                        # quals = read.query_qualities[read_pos:read_pos + indel_length]
-                        #bases = read.query_sequence[read_pos]
-                        #quals = read.query_qualities[read_pos]
-                        #query_names[name]["haplotype"].append(bases)
-                        #query_names[name]["quality"].append(quals)
-                        #query_names[name]["position"].append(pos)
+                        indel_start = read_pos
+                        indel_end = read_pos + pileup_read.indel + 1
+                        
+                        bases = read.query_sequence[indel_start:indel_end]
+                        quals = read.query_qualities[indel_start:indel_end]
+                        
+                        query_names[name]["haplotype"].append(bases)
+                        query_names[name]["quality"].append(quals)
+                        query_names[name]["position"].append(pos)
+                        
+                        print(bases, quals)
                         continue
                     
                     # deletion is annotated as - and qual set to 70 (might adjust)
                     if pileup_read.is_del:
-                        base = "*"
+                        base = get_del()
                         qual = 70
                     else:
                         base = read.query_sequence[read_pos]
