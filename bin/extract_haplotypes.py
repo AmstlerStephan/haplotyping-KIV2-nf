@@ -251,8 +251,6 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                         query_names[name]["haplotype"].append(bases)
                         query_names[name]["quality"].append(quals)
                         query_names[name]["position"].append(pos)
-                        
-                        print(bases, quals)
                         continue
                     
                     # deletion is annotated as - and qual set to 70 (might adjust)
