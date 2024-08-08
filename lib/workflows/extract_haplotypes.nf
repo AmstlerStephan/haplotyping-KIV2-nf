@@ -23,9 +23,14 @@ if (params.use_variant_calling_positions) {
 }
 
 // STAGE CHANNELS
-bam_file_paths = Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}", type: "file")
-bam_file_index_paths = Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}.bai", type: "file")
-cluster_stats_paths = Channel.fromPath("${params.input}/barcode*/stats/raw/${params.cluster_stats_pattern}", type: "file")
+bam_file_paths = 
+Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}", type: "file")
+
+bam_file_index_paths = 
+Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}.bai", type: "file")
+
+cluster_stats_paths = 
+Channel.fromPath("${params.input}/barcode*/stats/raw/${params.cluster_stats_pattern}", type: "file")
 
 bam_file_paths
 .map { 
@@ -51,7 +56,6 @@ bam_file_index_paths
 }
 .set { bam_file_indexes }
 
-
 bam_files
 .join(bam_file_indexes, remainder: false)
 .join(cluster_stats, remainder: false)
@@ -62,7 +66,6 @@ include {EXTRACT_HAPLOTYPES} from '../processes/extract_haplotypes.nf'
 include {MERGE_HAPLOTYPES} from '../processes/merge_haplotypes.nf'
 include {MULTIPLE_ALIGNMENT} from '../processes/multiple_alignment.nf'
 include {FILTER_BAM} from '../processes/filter_bam.nf'
-//include {FILTER_BAM} from '../processes/filter_bam_2.nf'
 
 workflow EXTRACT_HAPLOTYPES_WF {
 
