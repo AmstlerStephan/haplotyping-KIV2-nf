@@ -39,10 +39,15 @@ workflow EXTRACT_HAPLOTYPES_WF {
     cluster_stats_paths = 
     Channel.fromPath("${params.input}/barcode*/stats/raw/${params.cluster_stats_pattern}", type: "file")
 
+    // wait for all files to be found
+    bam_file_paths.await()
+    bam_file_index_paths.await()
+    cluster_stats_paths.await()
+
     bam_file_paths
     .map { 
         bam_file_path -> 
-            barcode = (bam_file_path =~ /barcode\d*/)[0]
+            def barcode = (bam_file_path =~ /barcode\d*/)[0]
             tuple ( barcode, bam_file_path)
     }
     .set { bam_files }
@@ -50,7 +55,7 @@ workflow EXTRACT_HAPLOTYPES_WF {
     cluster_stats_paths
     .map { 
         cluster_stats_path -> 
-            barcode = (cluster_stats_path =~ /barcode\d*/)[0]
+            def barcode = (cluster_stats_path =~ /barcode\d*/)[0]
             tuple ( barcode, cluster_stats_path)
     }
     .set { cluster_stats }
@@ -58,15 +63,10 @@ workflow EXTRACT_HAPLOTYPES_WF {
     bam_file_index_paths
     .map { 
         bam_file_index_path -> 
-            barcode = (bam_file_index_path =~ /barcode\d*/)[0]
+            def barcode = (bam_file_index_path =~ /barcode\d*/)[0]
             tuple ( barcode, bam_file_index_path)
     }
     .set { bam_file_indexes }
-
-    // wait for all files to be found
-    bam_file_paths.await()
-    bam_file_index_paths.await()
-    cluster_stats_paths.await()
 
     bam_files
     .join(bam_file_indexes, remainder: false)
