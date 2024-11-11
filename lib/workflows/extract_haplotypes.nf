@@ -28,12 +28,13 @@ workflow EXTRACT_HAPLOTYPES_WF {
     } else {
         variant_calling_positions = file( "${projectDir}/data/variant_calling/NO_FILE.txt", checkIfExists: true)
     }
-    
+
     // STAGE CHANNELS
     def input_dir = "${params.input}"
 
     // Create channels for BAM files, BAI files, and cluster stats
     def bam_files = Channel.fromFilePairs("${input_dir}/barcode*/align/consensus/${params.bam_pattern},{,.bai}", size: 2, flat: true)
+        .view()
         .map { barcode, bam, bai -> tuple(barcode, bam, bai) }
 
     def cluster_stats = Channel.fromPath("${input_dir}/barcode*/stats/raw/${params.cluster_stats_pattern}")
