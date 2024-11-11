@@ -31,18 +31,14 @@ workflow EXTRACT_HAPLOTYPES_WF {
 
     // STAGE CHANNELS
     bam_file_paths = 
-    Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}", type: "file")
+    Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}", type: "file").await()
 
     bam_file_index_paths = 
-    Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}.bai", type: "file")
+    Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}.bai", type: "file").await()
 
     cluster_stats_paths = 
-    Channel.fromPath("${params.input}/barcode*/stats/raw/${params.cluster_stats_pattern}", type: "file")
+    Channel.fromPath("${params.input}/barcode*/stats/raw/${params.cluster_stats_pattern}", type: "file").await()
 
-    // wait for all files to be found
-    bam_file_paths.await()
-    bam_file_index_paths.await()
-    cluster_stats_paths.await()
 
     bam_file_paths
     .map { 
