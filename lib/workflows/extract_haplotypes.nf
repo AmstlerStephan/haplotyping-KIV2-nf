@@ -30,25 +30,23 @@ workflow EXTRACT_HAPLOTYPES_WF {
     }
 
     // STAGE CHANNELS
-    def input_dir = "${params.input}"
+    bam_files = 
+        Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}", type: "file")
+        .map { file -> tuple(file.parent.parent.parent.name, file) }
 
-    // Create channels for BAM files, BAI files, and cluster stats
-    def bam_files = Channel.fromFilePairs("${input_dir}/barcode*/align/consensus/${params.bam_pattern},{,.bai}", size: 2, flat: true)
-        .view()
-        //.map { barcode, bam, bai -> tuple(barcode, bam, bai) }
+    bam_file_indexes = 
+        Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}.bai", type: "file")
+        .map { file -> tuple(file.parent.parent.parent.name, file) }
 
-    def cluster_stats = Channel.fromPath("${input_dir}/barcode*/stats/raw/${params.cluster_stats_pattern}")
-        .view()
-        //.map { file -> tuple(file.parent.parent.parent.name, file) }
+    cluster_stats = Channel.fromPath("${params.input}/barcode*/stats/raw/${params.cluster_stats_pattern}")
+        .map { file -> tuple(file.parent.parent.parent.name, file) }
 
-    // Combine BAM files with cluster stats
-    def combined_data = bam_files.join(cluster_stats, by: 0, remainder: true)
-
-    // Filter out any incomplete entries
-    def complete_data = combined_data.filter { it.size() == 4 }
-
-    // Set the final channel for downstream processes
-    complete_data.set { bam_stats_tuples }
+    bam_stats_tuples = bam_files
+        .join(bam_file_indexes)
+        .join(cluster_stats)
+        .map { barcode, bam, index, stats ->
+            tuple(barcode, bam, index, stats)
+        }
 
     FILTER_BAM(bam_stats_tuples, filter_bam_py)
     
