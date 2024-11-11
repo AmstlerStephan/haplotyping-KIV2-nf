@@ -28,46 +28,25 @@ workflow EXTRACT_HAPLOTYPES_WF {
     } else {
         variant_calling_positions = file( "${projectDir}/data/variant_calling/NO_FILE.txt", checkIfExists: true)
     }
-
+    
     // STAGE CHANNELS
-    bam_file_paths = 
-    Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}", type: "file").await()
+    def input_dir = "${params.input}"
 
-    bam_file_index_paths = 
-    Channel.fromPath("${params.input}/barcode*/align/consensus/${params.bam_pattern}.bai", type: "file").await()
+    // Create channels for BAM files, BAI files, and cluster stats
+    def bam_files = Channel.fromFilePairs("${input_dir}/barcode*/align/consensus/${params.bam_pattern},{,.bai}", size: 2, flat: true)
+        .map { barcode, bam, bai -> tuple(barcode, bam, bai) }
 
-    cluster_stats_paths = 
-    Channel.fromPath("${params.input}/barcode*/stats/raw/${params.cluster_stats_pattern}", type: "file").await()
+    def cluster_stats = Channel.fromPath("${input_dir}/barcode*/stats/raw/${params.cluster_stats_pattern}")
+        .map { file -> tuple(file.parent.parent.parent.name, file) }
 
+    // Combine BAM files with cluster stats
+    def combined_data = bam_files.join(cluster_stats, by: 0, remainder: true)
 
-    bam_file_paths
-    .map { 
-        bam_file_path -> 
-            def barcode = (bam_file_path =~ /barcode\d*/)[0]
-            tuple ( barcode, bam_file_path)
-    }
-    .set { bam_files }
+    // Filter out any incomplete entries
+    def complete_data = combined_data.filter { it.size() == 4 }
 
-    cluster_stats_paths
-    .map { 
-        cluster_stats_path -> 
-            def barcode = (cluster_stats_path =~ /barcode\d*/)[0]
-            tuple ( barcode, cluster_stats_path)
-    }
-    .set { cluster_stats }
-
-    bam_file_index_paths
-    .map { 
-        bam_file_index_path -> 
-            def barcode = (bam_file_index_path =~ /barcode\d*/)[0]
-            tuple ( barcode, bam_file_index_path)
-    }
-    .set { bam_file_indexes }
-
-    bam_files
-    .join(bam_file_indexes, remainder: false)
-    .join(cluster_stats, remainder: false)
-    .set { bam_stats_tuples }
+    // Set the final channel for downstream processes
+    complete_data.set { bam_stats_tuples }
 
     FILTER_BAM(bam_stats_tuples, filter_bam_py)
     
