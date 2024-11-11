@@ -180,7 +180,8 @@ def is_polymorphic_position(pileup_column, variant_cutoff):
             variants[base] = 1
     
     if len(variants) > 1:
-        is_polymorphic = all(variants[base] / n_bases >= variant_cutoff for base in variants)
+        is_polymorphic = sum(1 for base in variants if variants[base] / n_bases >= variant_cutoff) >= 2
+        # is_polymorphic = all(variants[base] / n_bases >= variant_cutoff for base in variants)
 
     # get most abundant base
     variant = max(variants, key=variants.get)
