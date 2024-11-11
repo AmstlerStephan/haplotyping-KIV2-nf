@@ -35,10 +35,11 @@ workflow EXTRACT_HAPLOTYPES_WF {
     // Create channels for BAM files, BAI files, and cluster stats
     def bam_files = Channel.fromFilePairs("${input_dir}/barcode*/align/consensus/${params.bam_pattern},{,.bai}", size: 2, flat: true)
         .view()
-        .map { barcode, bam, bai -> tuple(barcode, bam, bai) }
+        //.map { barcode, bam, bai -> tuple(barcode, bam, bai) }
 
     def cluster_stats = Channel.fromPath("${input_dir}/barcode*/stats/raw/${params.cluster_stats_pattern}")
-        .map { file -> tuple(file.parent.parent.parent.name, file) }
+        .view()
+        //.map { file -> tuple(file.parent.parent.parent.name, file) }
 
     // Combine BAM files with cluster stats
     def combined_data = bam_files.join(cluster_stats, by: 0, remainder: true)
