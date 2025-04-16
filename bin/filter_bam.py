@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-import re
 
 import pysam
 import pandas as pd
@@ -98,7 +97,7 @@ def get_clusters(cluster_stats_file, min_cluster_size, max_cluster_size):
                                            (cluster_stats["reads_written_fwd"] + cluster_stats["reads_written_rev"] >= min_cluster_size) &
                                            (cluster_stats["reads_found"] <= max_cluster_size)]
     
-    return [re.sub(r"sub\d+", "", cid) for cid in cluster_stats_filtered["cluster_id"]]    
+    return cluster_stats_filtered["cluster_id"].to_list()    
 
 def main(argv=sys.argv[1:]):
     """
