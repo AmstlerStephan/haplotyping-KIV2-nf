@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import re
 
 import pysam
 import pandas as pd
@@ -97,8 +98,10 @@ def get_clusters(cluster_stats_file, min_cluster_size, max_cluster_size):
                                            (cluster_stats["reads_written_fwd"] + cluster_stats["reads_written_rev"] >= min_cluster_size) &
                                            (cluster_stats["reads_found"] <= max_cluster_size)]
     
-    return cluster_stats_filtered["cluster_id"].to_list()    
-
+    cluster_stats_filtered_parsed = [re.sub(r"_sub\d+", "", cluster_id) for cluster_id in cluster_stats_filtered["cluster_id"]]                                                                                                                                                                  
+    
+    return cluster_stats_filtered_parsed    
+    
 def main(argv=sys.argv[1:]):
     """
     Basic command line interface to telemap.
