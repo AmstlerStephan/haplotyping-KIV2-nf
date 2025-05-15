@@ -81,15 +81,14 @@ def filter_bam(args):
     max_cluster_size = args.MAX_CLUSTER_SIZE
     output = args.OUTPUT
     outfile_name = outfile_name = os.path.join(output, "filtered_bam.bam")         
-    
-    clusters_above_threshold = get_clusters(cluster_stats, min_cluster_size, max_cluster_size)    
+    clusters_above_threshold = get_clusters(cluster_stats, min_cluster_size, max_cluster_size)
 
     with pysam.AlignmentFile(bam_file, "rb") as bam:
         outfile = pysam.AlignmentFile(outfile_name, "w", template = bam)
         for read in bam.fetch(until_eof=True):
             name = read.query_name[:-2]
-            if name in clusters_above_threshold:
-                outfile.write(read)              
+            if read.query_name in clusters_above_threshold:
+                outfile.write(read)
 
 def get_clusters(cluster_stats_file, min_cluster_size, max_cluster_size):
     cluster_stats = pd.read_csv(cluster_stats_file, sep = "\t")
@@ -98,9 +97,10 @@ def get_clusters(cluster_stats_file, min_cluster_size, max_cluster_size):
                                            (cluster_stats["reads_written_fwd"] + cluster_stats["reads_written_rev"] >= min_cluster_size) &
                                            (cluster_stats["reads_found"] <= max_cluster_size)]
     
-    cluster_stats_filtered_parsed = [re.sub(r"_sub\d+", "", cluster_id) for cluster_id in cluster_stats_filtered["cluster_id"]]                                                                                                                                                                  
+    # cluster_stats_filtered_parsed = [re.sub(r"_sub\d+", "", cluster_id) for cluster_id in cluster_stats_filtered["cluster_id"]]    
+    cluster_stats_filtered_parsed = cluster_stats_filtered["cluster_id"].to_list()
     
-    return cluster_stats_filtered_parsed    
+    return cluster_stats_filtered_parsed
     
 def main(argv=sys.argv[1:]):
     """
