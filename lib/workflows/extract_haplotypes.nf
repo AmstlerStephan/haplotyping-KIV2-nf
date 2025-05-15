@@ -48,8 +48,6 @@ workflow EXTRACT_HAPLOTYPES_WF {
             tuple(barcode, bam, index, stats)
         }
 
-    bam_stats_tuples.view()
-
     FILTER_BAM(bam_stats_tuples, filter_bam_py)
     
     EXTRACT_HAPLOTYPES(FILTER_BAM.out.filtered_bam, variant_calling_positions, extract_haplotypes_py)
