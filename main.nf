@@ -24,6 +24,7 @@ workflow {
         --ont_pl_dir [path/to/ont_pl_dir]                 [REQUIRED] Provide the directory associated with ONT pipeline.
         --output [path/to/output/dir]                     [REQUIRED] Specify the directory where the pipeline will write its output.
         --variant_calling_positions [path/to/positions]   Specify the path to the file specifying variant calling positions.
+        --region [region name]                            Specify the region name to be processed.
         --bam_pattern [pattern]                           Pattern to match BAM files within the input directory. Default: "masked_consensus.bam"
         --cluster_stats_pattern [pattern]                 Pattern to match cluster statistics files. Default: "split_cluster_stats.tsv"
         --min_reads_per_cluster [number]                  Minimum number of reads per cluster. Default: 10

@@ -31,14 +31,14 @@ workflow EXTRACT_HAPLOTYPES_WF {
 
     // STAGE CHANNELS
     bam_files = 
-        Channel.fromPath("${params.input}/barcode*/*/align/consensus/${params.bam_pattern}", type: "file")
+        Channel.fromPath("${params.input}/barcode*/${params.region}/align/consensus/${params.bam_pattern}", type: "file")
         .map { file -> tuple(file.parent.parent.parent.parent.name, file) }
 
     bam_file_indexes = 
-        Channel.fromPath("${params.input}/barcode*/*/align/consensus/${params.bam_pattern}.bai", type: "file")
+        Channel.fromPath("${params.input}/barcode*/${params.region}/align/consensus/${params.bam_pattern}.bai", type: "file")
         .map { file -> tuple(file.parent.parent.parent.parent.name, file) }
 
-    cluster_stats = Channel.fromPath("${params.input}/barcode*/*/stats/raw/${params.cluster_stats_pattern}")
+    cluster_stats = Channel.fromPath("${params.input}/barcode*/${params.region}/stats/raw/${params.cluster_stats_pattern}")
         .map { file -> tuple(file.parent.parent.parent.parent.name, file) }
 
     bam_stats_tuples = bam_files
