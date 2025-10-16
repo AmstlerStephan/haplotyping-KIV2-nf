@@ -1,14 +1,14 @@
 process MERGE_HAPLOTYPES {
-  tag "${sample}"
-  publishDir "${params.output}/${sample}/haplotyping/", pattern: "*fasta", mode: 'copy'
-  publishDir "${params.output}/${sample}/stats/", pattern: "*tsv", mode: 'copy'
+  tag "${sample}-${region}"
+  publishDir "${params.output}/${sample}/${region}/haplotyping/", pattern: "*fasta", mode: 'copy'
+  publishDir "${params.output}/${sample}/${region}/stats/", pattern: "*tsv", mode: 'copy'
 
   input:
-  tuple val(sample), path(fastx_file)
+  tuple val(sample), val(region), path(fastx_file)
   path merge_haplotypes_py
 
   output:
-  tuple val("${sample}"), path("*merged_haplotypes.fasta"), emit: merged_haplotypes
+  tuple val("${sample}"), val("${region}"), path("*merged_haplotypes.fasta"), emit: merged_haplotypes
   path "*fasta"
   path "*.tsv"
 

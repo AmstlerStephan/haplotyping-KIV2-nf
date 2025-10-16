@@ -1,15 +1,15 @@
 process EXTRACT_HAPLOTYPES {
-  tag "${sample}"
-  publishDir "${params.output}/${sample}/haplotyping/", mode: 'copy', pattern: "*${params.output_format}"
-  publishDir "${params.output}/${sample}/stats/", mode: 'copy', pattern: "*stats.tsv"
+  tag "${sample}-${region}"
+  publishDir "${params.output}/${sample}/${region}/haplotyping/", mode: 'copy', pattern: "*${params.output_format}"
+  publishDir "${params.output}/${sample}/${region}/stats/", mode: 'copy', pattern: "*stats.tsv"
 
   input:
-  tuple val(sample), path(bam_file), path(bam_file_index)
+  tuple val(sample), val(region), path(bam_file), path(bam_file_index)
   path variant_calling_positions
   path extract_haplotypes_py
 
   output:
-  tuple val("${sample}"), path("haplotypes_filtered.${params.output_format}"), emit: extracted_haplotypes
+  tuple val("${sample}"), val("${region}"), path("haplotypes_filtered.${params.output_format}"), emit: extracted_haplotypes
   path "haplotypes.${params.output_format}"
   path "*stats.tsv"
 

@@ -25,19 +25,31 @@ workflow EXTRACT_HAPLOTYPES_WF {
 
   // Input channels
   bam_files = Channel.fromPath("${params.input}/barcode*/${params.region}/align/consensus/${params.bam_pattern}", type: "file")
-    .map { file -> tuple(file.parent.parent.parent.parent.name, file) }
+    .map { file ->
+      def barcode = file.parent.parent.parent.parent.name
+      def region = file.parent.parent.parent.name
+      tuple(barcode, region, file)
+    }
 
   bam_file_indexes = Channel.fromPath("${params.input}/barcode*/${params.region}/align/consensus/${params.bam_pattern}.bai", type: "file")
-    .map { file -> tuple(file.parent.parent.parent.parent.name, file) }
+    .map { file ->
+      def barcode = file.parent.parent.parent.parent.name
+      def region = file.parent.parent.parent.name
+      tuple(barcode, region, file)
+    }
 
   cluster_stats = Channel.fromPath("${params.input}/barcode*/${params.region}/stats/raw/${params.cluster_stats_pattern}")
-    .map { file -> tuple(file.parent.parent.parent.parent.name, file) }
+    .map { file ->
+      def barcode = file.parent.parent.parent.parent.name
+      def region = file.parent.parent.parent.name
+      tuple(barcode, region, file)
+    }
 
   bam_stats_tuples = bam_files
     .join(bam_file_indexes)
     .join(cluster_stats)
-    .map { barcode, bam, index, stats ->
-      tuple(barcode, bam, index, stats)
+    .map { barcode, region, bam, index, stats ->
+      tuple(barcode, region, bam, index, stats)
     }
 
   // Process workflow
@@ -45,7 +57,7 @@ workflow EXTRACT_HAPLOTYPES_WF {
 
   EXTRACT_HAPLOTYPES(FILTER_BAM.out.filtered_bam, variant_calling_positions, extract_haplotypes_py)
 
-  extracted_haplotypes_filtered = EXTRACT_HAPLOTYPES.out.extracted_haplotypes.filter { _barcode, fasta_file -> fasta_file.countFasta() >= 1 }
+  extracted_haplotypes_filtered = EXTRACT_HAPLOTYPES.out.extracted_haplotypes.filter { _barcode, _region, fasta_file -> fasta_file.countFasta() >= 1 }
 
   MERGE_HAPLOTYPES(extracted_haplotypes_filtered, merge_haplotypes_py)
 }

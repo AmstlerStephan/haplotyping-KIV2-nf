@@ -1,13 +1,13 @@
 process FILTER_BAM {
-  tag "${sample}"
-  publishDir "${params.output}/${sample}/filtered_bam/", mode: 'copy', enabled: "${params.verbose}"
+  tag "${sample}-${region}"
+  publishDir "${params.output}/${sample}/${region}/filtered_bam/", mode: 'copy', enabled: "${params.verbose}"
 
   input:
-  tuple val(sample), path(bam_file), path(bam_file_index), path(cluster_stats)
+  tuple val(sample), val(region), path(bam_file), path(bam_file_index), path(cluster_stats)
   path filter_bam_py
 
   output:
-  tuple val("${sample}"), path("*.bam"), path("*.bam.bai"), emit: filtered_bam
+  tuple val("${sample}"), val("${region}"), path("*.bam"), path("*.bam.bai"), emit: filtered_bam
 
   script:
   """

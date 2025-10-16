@@ -1,10 +1,10 @@
 process MULTIPLE_ALIGNMENT {
-  tag "${sample}"
-  publishDir "${params.output}/${sample}/mafft/tree", pattern: "*.tree", mode: 'copy'
-  publishDir "${params.output}/${sample}/mafft", pattern: "merged_haplotypes_ma.fasta", mode: 'copy'
+  tag "${sample}-${region}"
+  publishDir "${params.output}/${sample}/${region}/mafft/tree", pattern: "*.tree", mode: 'copy'
+  publishDir "${params.output}/${sample}/${region}/mafft", pattern: "merged_haplotypes_ma.fasta", mode: 'copy'
 
   input:
-  tuple val(sample), path(merged_haplotypes)
+  tuple val(sample), val(region), path(merged_haplotypes)
 
   output:
   path "*.tree"
