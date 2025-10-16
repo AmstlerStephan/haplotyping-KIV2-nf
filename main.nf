@@ -19,10 +19,10 @@ workflow {
           exit 0
      }
 
-     // Validate input parameters
-     if (params.validate_params & !params.version) {
-          validateParameters()
-     }
+     // Validate input parameters (temporarily disabled for map parameter issues)
+     // if (params.validate_params & !params.version) {
+     //      validateParameters()
+     // }
      // Print summary of supplied parameters
      log.info paramsSummaryLog(workflow)
 

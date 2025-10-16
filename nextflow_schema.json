@@ -110,24 +110,7 @@
                     "help_text": "Optional file with genomic positions for variant calling",
                     "fa_icon": "fas fa-file-alt"
                 },
-                "region_exclusion_ranges": {
-                    "type": "object",
-                    "description": "Region-specific exclusion ranges",
-                    "help_text": "Map of regions to comma-separated exclusion ranges (e.g., '2472,2506')",
-                    "fa_icon": "fas fa-ban",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "region_variant_calling_positions": {
-                    "type": "object",
-                    "description": "Region-specific variant calling position files",
-                    "help_text": "Map of regions to variant calling position file paths",
-                    "fa_icon": "fas fa-map",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                }
+
             }
         },
         "output_options": {

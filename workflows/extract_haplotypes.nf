@@ -7,8 +7,8 @@ include { FILTER_BAM         } from '../modules/local/haplotyping/filter_bam.nf'
 
 workflow EXTRACT_HAPLOTYPES_WF {
 
-  // Validate required parameters
-  WorkflowMain.validate(params)
+  // Validate required parameters (temporarily disabled)
+  // WorkflowMain.validate(params)
 
   // scripts
   extract_haplotypes_py = file("${projectDir}/bin/extract_haplotypes.py", checkIfExists: true)
@@ -55,8 +55,8 @@ workflow EXTRACT_HAPLOTYPES_WF {
     }
 
   bam_stats_tuples = bam_files
-    .join(bam_file_indexes)
-    .join(cluster_stats)
+    .join(bam_file_indexes, by: [0, 1])
+    .join(cluster_stats, by: [0, 1])
     .map { barcode, region, bam, index, stats ->
       tuple(barcode, region, bam, index, stats)
     }

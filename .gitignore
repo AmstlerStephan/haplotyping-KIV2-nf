@@ -23,6 +23,7 @@ data/
 results/
 output/
 outputs/
+test_output/
 
 # Temporary files
 *.tmp
