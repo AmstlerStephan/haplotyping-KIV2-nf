@@ -81,6 +81,14 @@ Replace `<path_to_input_directory>` and `<path_to_output_directory>` with the ac
   ]
   ```
 
+- **region_variant_calling_positions**: A map defining region-specific variant calling position files. Each region can have its own variant calling positions file or none at all. Example:
+  ```groovy
+  region_variant_calling_positions = [
+      "lpa2645": "",                              // No variant calling positions file
+      "lpa5104": "data/positions_lpa5104.tsv"    // Use specific file for lpa5104
+  ]
+  ```
+
 - **min_qscore**: The minimum quality score required during processing. Default is `45`.
 
 - **output_format**: The output format for haplotype results. Default is `"fasta"`.
