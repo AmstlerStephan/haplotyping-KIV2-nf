@@ -73,7 +73,13 @@ Replace `<path_to_input_directory>` and `<path_to_output_directory>` with the ac
 
 - **use_variant_calling_positions**: A boolean flag indicating whether to use variant calling positions. If `true`, the workflow considers the `variant_calling_positions` file.
 
-- **ranges_to_exclude**: A comma-separated list of ranges to exclude during processing. Default is `"2472,2506"`.
+- **region_exclusion_ranges**: A map defining region-specific exclusion ranges. Each region can have its own exclusion ranges or none at all. Example:
+  ```groovy
+  region_exclusion_ranges = [
+      "lpa2645": "",              // No positions to exclude
+      "lpa5104": "2472,2506"      // Exclude positions 2472-2506
+  ]
+  ```
 
 - **min_qscore**: The minimum quality score required during processing. Default is `45`.
 

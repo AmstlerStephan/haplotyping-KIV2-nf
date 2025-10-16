@@ -48,6 +48,11 @@ class WorkflowMain {
         if (!(params.output_format in validFormats)) {
             Nextflow.error("Parameter 'output_format' must be one of: ${validFormats.join(', ')}")
         }
+
+        // Validate region exclusion ranges format
+        if (params.region_exclusion_ranges && !(params.region_exclusion_ranges instanceof Map)) {
+            Nextflow.error("Parameter 'region_exclusion_ranges' must be a map of region names to exclusion ranges")
+        }
     }
 
     public static String version(workflow) {
