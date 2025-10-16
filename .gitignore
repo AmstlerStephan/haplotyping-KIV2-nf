@@ -10,6 +10,10 @@ dag.dot
 dag.html
 dag.svg
 dag.mmd
+null
+
+# data
+data/
 
 # nf-test
 .nf-test/

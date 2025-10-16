@@ -15,13 +15,22 @@ workflow EXTRACT_HAPLOTYPES_WF {
   merge_haplotypes_py = file("${projectDir}/bin/merge_haplotypes.py", checkIfExists: true)
   filter_bam_py = file("${projectDir}/bin/filter_bam.py", checkIfExists: true)
 
-  // files
-  if (params.use_variant_calling_positions) {
-    variant_calling_positions = file("${params.variant_calling_positions}", checkIfExists: true)
-  }
-  else {
-    variant_calling_positions = file("${projectDir}/data/variant_calling/NO_FILE.txt", checkIfExists: true)
-  }
+  // Create region-specific variant calling positions channel
+  def no_file = file("${projectDir}/data/variant_calling/NO_FILE.txt", checkIfExists: true)
+
+  variant_positions_channel = Channel.fromList(
+      params.region_variant_calling_positions?.collect { region, pos_file ->
+        [region, pos_file ?: ""]
+      } ?: []
+    )
+    .map { region, pos_file ->
+      if (pos_file && !pos_file.isEmpty() && params.use_variant_calling_positions) {
+        tuple(region, file(pos_file, checkIfExists: true))
+      }
+      else {
+        tuple(region, no_file)
+      }
+    }
 
   // Input channels
   bam_files = Channel.fromPath("${params.input}/barcode*/${params.region}/align/consensus/${params.bam_pattern}", type: "file")
@@ -55,7 +64,13 @@ workflow EXTRACT_HAPLOTYPES_WF {
   // Process workflow
   FILTER_BAM(bam_stats_tuples, filter_bam_py)
 
-  EXTRACT_HAPLOTYPES(FILTER_BAM.out.filtered_bam, variant_calling_positions, extract_haplotypes_py)
+  // Join filtered BAM with region-specific variant calling positions
+  bam_with_variant_positions = FILTER_BAM.out.filtered_bam
+    .map { sample, region, bam, bai -> tuple(region, sample, bam, bai) }
+    .join(variant_positions_channel, by: 0)
+    .map { region, sample, bam, bai, variant_file -> tuple(sample, region, bam, bai, variant_file) }
+
+  EXTRACT_HAPLOTYPES(bam_with_variant_positions, extract_haplotypes_py)
 
   extracted_haplotypes_filtered = EXTRACT_HAPLOTYPES.out.extracted_haplotypes.filter { _barcode, _region, fasta_file -> fasta_file.countFasta() >= 1 }
 

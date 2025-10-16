@@ -53,6 +53,11 @@ class WorkflowMain {
         if (params.region_exclusion_ranges && !(params.region_exclusion_ranges instanceof Map)) {
             Nextflow.error("Parameter 'region_exclusion_ranges' must be a map of region names to exclusion ranges")
         }
+
+        // Validate region variant calling positions format
+        if (params.region_variant_calling_positions && !(params.region_variant_calling_positions instanceof Map)) {
+            Nextflow.error("Parameter 'region_variant_calling_positions' must be a map of region names to variant calling position files")
+        }
     }
 
     public static String version(workflow) {

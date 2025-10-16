@@ -1,0 +1,244 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://raw.githubusercontent.com/AmstlerStephan/haplotyping-KIV2-nf/main/nextflow_schema.json",
+    "title": "haplotyping-KIV2-nf pipeline parameters",
+    "description": "Nextflow pipeline to extract haplotypes of KIV-2 UMI data",
+    "type": "object",
+    "definitions": {
+        "input_output_options": {
+            "title": "Input/output options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "required": ["input", "output"],
+            "properties": {
+                "input": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Path to the directory containing input BAM files",
+                    "help_text": "Directory containing barcode subdirectories with BAM files and statistics",
+                    "fa_icon": "fas fa-folder-open"
+                },
+                "output": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "The output directory where the results will be saved",
+                    "default": "./results",
+                    "fa_icon": "fas fa-folder-open"
+                }
+            }
+        },
+        "haplotype_extraction": {
+            "title": "Haplotype extraction parameters",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Parameters for haplotype extraction and filtering",
+            "properties": {
+                "region": {
+                    "type": "string",
+                    "description": "Target region for haplotype extraction",
+                    "help_text": "Specify the genomic region (e.g., lpa5104, lpa2645)",
+                    "fa_icon": "fas fa-map-marker-alt"
+                },
+                "bam_pattern": {
+                    "type": "string",
+                    "default": "masked_consensus.bam",
+                    "description": "Pattern to match BAM files",
+                    "fa_icon": "fas fa-file"
+                },
+                "cluster_stats_pattern": {
+                    "type": "string",
+                    "default": "split_cluster_stats.tsv",
+                    "description": "Pattern to match cluster statistics files",
+                    "fa_icon": "fas fa-chart-bar"
+                },
+                "min_reads_per_cluster": {
+                    "type": "integer",
+                    "default": 10,
+                    "minimum": 1,
+                    "description": "Minimum number of reads per cluster",
+                    "fa_icon": "fas fa-filter"
+                },
+                "max_reads_per_cluster": {
+                    "type": "integer",
+                    "default": 200,
+                    "minimum": 1,
+                    "description": "Maximum number of reads per cluster",
+                    "fa_icon": "fas fa-filter"
+                },
+                "max_edit_distance": {
+                    "type": "integer",
+                    "default": 2,
+                    "minimum": 0,
+                    "description": "Maximum edit distance for clustering",
+                    "fa_icon": "fas fa-ruler"
+                },
+                "min_qscore": {
+                    "type": "integer",
+                    "default": 45,
+                    "minimum": 0,
+                    "maximum": 93,
+                    "description": "Minimum quality score threshold",
+                    "fa_icon": "fas fa-medal"
+                },
+                "variant_cutoff": {
+                    "type": "number",
+                    "default": 0.1,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Variant frequency cutoff",
+                    "fa_icon": "fas fa-percentage"
+                }
+            }
+        },
+        "variant_calling": {
+            "title": "Variant calling options",
+            "type": "object",
+            "fa_icon": "fas fa-search",
+            "description": "Parameters for variant calling and position filtering",
+            "properties": {
+                "use_variant_calling_positions": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable variant calling positions filtering",
+                    "fa_icon": "fas fa-toggle-on"
+                },
+                "variant_calling_positions": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "File containing variant calling positions",
+                    "help_text": "Optional file with genomic positions for variant calling",
+                    "fa_icon": "fas fa-file-alt"
+                },
+                "region_exclusion_ranges": {
+                    "type": "object",
+                    "description": "Region-specific exclusion ranges",
+                    "help_text": "Map of regions to comma-separated exclusion ranges (e.g., '2472,2506')",
+                    "fa_icon": "fas fa-ban",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "region_variant_calling_positions": {
+                    "type": "object",
+                    "description": "Region-specific variant calling position files",
+                    "help_text": "Map of regions to variant calling position file paths",
+                    "fa_icon": "fas fa-map",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "output_options": {
+            "title": "Output formatting options",
+            "type": "object",
+            "fa_icon": "fas fa-file-export",
+            "description": "Options for output file formatting",
+            "properties": {
+                "output_format": {
+                    "type": "string",
+                    "default": "fasta",
+                    "enum": ["fasta", "fastq"],
+                    "description": "Output file format",
+                    "fa_icon": "fas fa-file-code"
+                },
+                "hardmask": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Apply hard masking to low-quality positions",
+                    "fa_icon": "fas fa-mask"
+                }
+            }
+        },
+        "computational_resources": {
+            "title": "Computational resources",
+            "type": "object",
+            "fa_icon": "fas fa-server",
+            "description": "Configure computational resource limits",
+            "properties": {
+                "threads": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Number of threads to use",
+                    "help_text": "Defaults to number of available processors minus 1",
+                    "fa_icon": "fas fa-microchip"
+                },
+                "max_memory": {
+                    "type": "string",
+                    "default": "128.GB",
+                    "pattern": "^\\d+(\\.\\d+)?\\.?\\s*(K|M|G|T)?B$",
+                    "description": "Maximum memory that can be requested for any single job",
+                    "fa_icon": "fas fa-memory"
+                },
+                "max_cpus": {
+                    "type": "integer",
+                    "default": 16,
+                    "minimum": 1,
+                    "description": "Maximum number of CPUs that can be requested for any single job",
+                    "fa_icon": "fas fa-microchip"
+                },
+                "max_time": {
+                    "type": "string",
+                    "default": "240.h",
+                    "pattern": "^(\\d+\\.?\\s*(s|m|h|d|day)\\s*)+$",
+                    "description": "Maximum amount of time that can be requested for any single job",
+                    "fa_icon": "far fa-clock"
+                }
+            }
+        },
+        "generic_options": {
+            "title": "Generic options",
+            "type": "object",
+            "fa_icon": "fas fa-file-alt",
+            "description": "Less common options for the pipeline, typically set in a config file.",
+            "properties": {
+                "help": {
+                    "type": "boolean",
+                    "description": "Display help text",
+                    "fa_icon": "fas fa-question-circle",
+                    "hidden": true
+                },
+                "version": {
+                    "type": "boolean",
+                    "description": "Display version and exit",
+                    "fa_icon": "fas fa-question-circle",
+                    "hidden": true
+                },
+                "validate_params": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Boolean whether to validate parameters against the schema at runtime",
+                    "fa_icon": "fas fa-check-square",
+                    "hidden": true
+                },
+                "verbose": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable verbose output",
+                    "fa_icon": "fas fa-volume-up"
+                }
+            }
+        }
+    },
+    "allOf": [
+        {
+            "$ref": "#/definitions/input_output_options"
+        },
+        {
+            "$ref": "#/definitions/haplotype_extraction"
+        },
+        {
+            "$ref": "#/definitions/variant_calling"
+        },
+        {
+            "$ref": "#/definitions/output_options"
+        },
+        {
+            "$ref": "#/definitions/computational_resources"
+        },
+        {
+            "$ref": "#/definitions/generic_options"
+        }
+    ]
+}
