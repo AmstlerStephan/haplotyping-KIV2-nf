@@ -1,0 +1,27 @@
+# Nextflow files
+work/
+.nextflow/
+.nextflow.log*
+*.log
+timeline.html
+report.html
+trace.txt
+dag.dot
+dag.html
+dag.svg
+dag.mmd
+
+# nf-test
+.nf-test/
+.nf-test.log*
+
+# Output directories
+results/
+output/
+outputs/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+.#*
