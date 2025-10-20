@@ -70,7 +70,7 @@ class WorkflowMain {
 
     public static String onComplete(workflow, baseDir, params) {
         // run a small clean-up script to remove "work" directory after successful completion
-        if (workflow.success && !params.verbose) {
+        if (workflow.success && !params.debug) {
             ["bash", "${baseDir}/bin/clean.sh", "${workflow.sessionId}"].execute()
         }
     }
