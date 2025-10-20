@@ -85,8 +85,6 @@ def filter_bam(args):
 
     # Load cluster stats DataFrame for read tagging
     cluster_stats = pd.read_csv(cluster_stats_file, sep="\t").copy()
-    # Add _0 suffix to cluster_id to match read names in bam
-    cluster_stats["cluster_id"] = cluster_stats["cluster_id"].astype(str) + "_0"
 
     with pysam.AlignmentFile(bam_file, "rb") as bam:
         outfile = pysam.AlignmentFile(outfile_name, "w", template = bam)
@@ -114,10 +112,6 @@ def get_clusters(cluster_stats_file, min_cluster_size, max_cluster_size):
                                            (cluster_stats["reads_written_fwd"] + cluster_stats["reads_written_rev"] >= min_cluster_size) &
                                            (cluster_stats["reads_found"] <= max_cluster_size)].copy()
 
-    # rename cluster ids to match read names in bam
-    cluster_stats_filtered["cluster_id"] = cluster_stats_filtered["cluster_id"].astype(str) + "_0"
-
-    # cluster_stats_filtered_parsed = [re.sub(r"_sub\d+", "", cluster_id) for cluster_id in cluster_stats_filtered["cluster_id"]]
     cluster_stats_filtered_parsed = cluster_stats_filtered["cluster_id"].to_list()
 
     return cluster_stats_filtered_parsed
