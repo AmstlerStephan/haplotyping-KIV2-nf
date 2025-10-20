@@ -1,9 +1,9 @@
 nextflow.enable.dsl = 2
 
-include { EXTRACT_HAPLOTYPES } from '../modules/local/haplotyping/extract_haplotypes.nf'
-include { MERGE_HAPLOTYPES   } from '../modules/local/haplotyping/merge_haplotypes.nf'
-include { MULTIPLE_ALIGNMENT } from '../modules/local/haplotyping/multiple_alignment.nf'
-include { FILTER_BAM         } from '../modules/local/haplotyping/filter_bam.nf'
+include { EXTRACT_HAPLOTYPES } from '../modules/local/extract_haplotypes.nf'
+include { MERGE_HAPLOTYPES   } from '../modules/local/merge_haplotypes.nf'
+include { MULTIPLE_ALIGNMENT } from '../modules/local/multiple_alignment.nf'
+include { FILTER_BAM         } from '../modules/local/filter_bam.nf'
 
 workflow EXTRACT_HAPLOTYPES_WF {
 
