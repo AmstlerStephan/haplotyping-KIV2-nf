@@ -1,0 +1,82 @@
+nextflow_process {
+
+    name "Test Process FILTER_BAM"
+    script "../../modules/local/filter_bam.nf"
+    process "FILTER_BAM"
+
+    tag "modules"
+
+    test("FILTER_BAM with lpa5104 data") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    "barcode50", "lpa5104",
+                    file("${projectDir}/data/barcode50/lpa5104/align/consensus/masked_consensus.bam", checkIfExists: true),
+                    file("${projectDir}/data/barcode50/lpa5104/align/consensus/masked_consensus.bam.bai", checkIfExists: true),
+                    file("${projectDir}/data/barcode50/lpa5104/stats/raw/split_cluster_stats.tsv", checkIfExists: true)
+                ]
+                input[1] = file("${projectDir}/bin/filter_bam.py", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            snapshot(process.out).match()
+        }
+    }
+
+    test("FILTER_BAM with lpa2645 data") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    "barcode50", "lpa2645",
+                    file("${projectDir}/data/barcode50/lpa2645/align/consensus/masked_consensus.bam", checkIfExists: true),
+                    file("${projectDir}/data/barcode50/lpa2645/align/consensus/masked_consensus.bam.bai", checkIfExists: true),
+                    file("${projectDir}/data/barcode50/lpa2645/stats/raw/split_cluster_stats.tsv", checkIfExists: true)
+                ]
+                input[1] = file("${projectDir}/bin/filter_bam.py", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            snapshot(process.out).match()
+        }
+    }
+
+    test("FILTER_BAM with minimal cluster size") {
+
+        setup {
+            // Override parameters for this test
+            params {
+                min_reads_per_cluster = 1
+                max_reads_per_cluster = 10
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = [
+                    "barcode50", "lpa5104",
+                    file("${projectDir}/data/barcode50/lpa5104/align/consensus/masked_consensus.bam", checkIfExists: true),
+                    file("${projectDir}/data/barcode50/lpa5104/align/consensus/masked_consensus.bam.bai", checkIfExists: true),
+                    file("${projectDir}/data/barcode50/lpa5104/stats/raw/split_cluster_stats.tsv", checkIfExists: true)
+                ]
+                input[1] = file("${projectDir}/bin/filter_bam.py", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            snapshot(process.out).match()
+        }
+    }
+}

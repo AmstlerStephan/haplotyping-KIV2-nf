@@ -1,0 +1,143 @@
+nextflow_process {
+
+    name "Test Process EXTRACT_HAPLOTYPES"
+    script "modules/local/extract_haplotypes.nf"
+    process "EXTRACT_HAPLOTYPES"
+
+    tag "modules"
+
+    test("EXTRACT_HAPLOTYPES with lpa5104 data using no variant calling positions") {
+
+        setup {
+            params {
+                use_variant_calling_positions = false
+                region_exclusion_ranges = [
+                    lpa5104 : "2472,2506"
+                    ]
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = [
+                    "barcode50",
+                    "lpa5104",
+                    file("${projectDir}/data/barcode50/lpa5104/align/consensus/masked_consensus.bam", checkIfExists: true),
+                    file("${projectDir}/data/barcode50/lpa5104/align/consensus/masked_consensus.bam.bai", checkIfExists: true),
+                    file("${projectDir}/data/variant_calling/NO_FILE/NO_FILE.txt", checkIfExists: true)
+                ]
+                input[1] = file("${projectDir}/bin/extract_haplotypes.py", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            snapshot(process.out).match()
+            def fastqFile = path(process.out.extracted_haplotypes.get(0).get(2)).fastq
+            assert fastqFile.isFastqFile() == true
+
+        }
+    }
+
+    test("EXTRACT_HAPLOTYPES with lpa5104 data using variant calling positions") {
+
+        setup {
+            params {
+                use_variant_calling_positions = true
+                region_exclusion_ranges = [
+                    lpa5104 : "2472,2506"
+                    ]
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = [
+                    "barcode50",
+                    "lpa5104",
+                    file("${projectDir}/data/barcode50/lpa5104/align/consensus/masked_consensus.bam", checkIfExists: true),
+                    file("${projectDir}/data/barcode50/lpa5104/align/consensus/masked_consensus.bam.bai", checkIfExists: true),
+                    file("${projectDir}/data/variant_calling/5104/variant_calling_positions/positions_5104_MAF2.tsv", checkIfExists: true)
+                ]
+                input[1] = file("${projectDir}/bin/extract_haplotypes.py", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            snapshot(process.out).match()
+            def fastqFile = path(process.out.extracted_haplotypes.get(0).get(2)).fastq
+            assert fastqFile.isFastqFile() == true
+
+        }
+    }
+
+    test("EXTRACT_HAPLOTYPES with lpa2645 data with no variant calling positions") {
+
+        setup {
+            params {
+                use_variant_calling_positions = false
+                region_exclusion_ranges = [
+                    lpa2645 : ""
+                    ]
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = [
+                    "barcode50",
+                    "lpa2645",
+                    file("${projectDir}/data/barcode50/lpa2645/align/consensus/masked_consensus.bam", checkIfExists: true),
+                    file("${projectDir}/data/barcode50/lpa2645/align/consensus/masked_consensus.bam.bai", checkIfExists: true),
+                    file("${projectDir}/data/variant_calling/NO_FILE/NO_FILE.txt", checkIfExists: true)
+                ]
+                input[1] = file("${projectDir}/bin/extract_haplotypes.py", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            snapshot(process.out).match()
+        }
+    }
+
+    test("EXTRACT_HAPLOTYPES with lpa2645 data with variant calling positions") {
+
+        setup {
+            params {
+                use_variant_calling_positions = true
+                region_exclusion_ranges = [
+                    lpa2645 : ""
+                    ]
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = [
+                    "barcode50",
+                    "lpa2645",
+                    file("${projectDir}/data/barcode50/lpa2645/align/consensus/masked_consensus.bam", checkIfExists: true),
+                    file("${projectDir}/data/barcode50/lpa2645/align/consensus/masked_consensus.bam.bai", checkIfExists: true),
+                    file("${projectDir}/data/variant_calling/2645/variant_calling_positions/positions_2645_MAF2.tsv", checkIfExists: true)
+                ]
+                input[1] = file("${projectDir}/bin/extract_haplotypes.py", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            snapshot(process.out).match()
+        }
+    }
+
+}

@@ -16,7 +16,7 @@ workflow EXTRACT_HAPLOTYPES_WF {
   filter_bam_py = file("${projectDir}/bin/filter_bam.py", checkIfExists: true)
 
   // Set up variant calling positions file
-  def no_file = file("${projectDir}/data/variant_calling/NO_FILE.txt", checkIfExists: true)
+  def no_file = file("${projectDir}/data/variant_calling/NO_FILE/NO_FILE.txt", checkIfExists: true)
 
   // Input channels - process all regions
   bam_files = Channel.fromPath("${params.input}/barcode*/*/align/consensus/${params.bam_pattern}", type: "file")
