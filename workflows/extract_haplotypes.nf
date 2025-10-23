@@ -15,8 +15,6 @@ workflow EXTRACT_HAPLOTYPES_WF {
   merge_haplotypes_py = file("${projectDir}/bin/merge_haplotypes.py", checkIfExists: true)
   filter_bam_py = file("${projectDir}/bin/filter_bam.py", checkIfExists: true)
 
-  // Set up variant calling positions file
-  no_file = file("${projectDir}/data/variant_calling/NO_FILE/NO_FILE.txt", checkIfExists: true)
 
   // Input channels - process all regions
   bam_files = Channel.fromPath("${params.input}/barcode*/*/align/consensus/${params.bam_pattern}", type: "file")
@@ -55,7 +53,7 @@ workflow EXTRACT_HAPLOTYPES_WF {
     def region_variant_file = params.region_variant_calling_positions?.get(region) ?: ""
     def variant_file = region_variant_file && !region_variant_file.isEmpty() && params.use_variant_calling_positions
       ? file(region_variant_file, checkIfExists: true)
-      : no_file
+      : file("${projectDir}/data/variant_calling/NO_FILE/NO_FILE.txt", checkIfExists: true)
     tuple(sample, region, bam, bai, variant_file)
   }
 
