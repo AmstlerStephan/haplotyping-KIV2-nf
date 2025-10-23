@@ -13,7 +13,9 @@ dag.mmd
 null
 
 # data
-data/
+data/barcode*/
+data/variant_calling/5104
+data/variant_calling/2645
 
 # nf-test
 .nf-test/
