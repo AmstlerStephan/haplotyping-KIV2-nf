@@ -1,0 +1,32 @@
+{
+    "MERGE_HAPLOTYPES with lpa5104 data": {
+        "content": [
+            [
+                [
+                    "merged_haplotype_log.tsv:md5,eac05bdc128967d7faa81413bde11b57",
+                    "merged_haplotype_stats.tsv:md5,3b1d81ecd3dca9cdd569670b0c44e28e"
+                ]
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "25.04.8"
+        },
+        "timestamp": "2025-10-31T09:49:43.447359618"
+    },
+    "MERGE_HAPLOTYPES with lpa2645 data": {
+        "content": [
+            [
+                [
+                    "merged_haplotype_log.tsv:md5,2c0a8ba9c7243af7a9ecb7ab097384ce",
+                    "merged_haplotype_stats.tsv:md5,8f22843fb343c5d957f69935eef793bf"
+                ]
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "25.04.8"
+        },
+        "timestamp": "2025-10-31T09:50:42.582170597"
+    }
+}

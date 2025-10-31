@@ -1,0 +1,123 @@
+nextflow_process {
+
+    name "Test Process MERGE_HAPLOTYPES"
+    script "modules/local/merge_haplotypes.nf"
+    process "MERGE_HAPLOTYPES"
+
+    tag "modules"
+
+    setup{
+        run("EXTRACT_HAPLOTYPES"){
+            script "modules/local/extract_haplotypes.nf"
+            params {
+                use_variant_calling_positions = false
+                region_exclusion_ranges = [
+                    lpa2645 : "",
+                    lpa5104 : "2472,2506"
+                ]
+            }
+            process{
+                """
+                input[0] = Channel.of(
+                [
+                    "barcode50",
+                    "lpa5104",
+                    file("${projectDir}/data/barcode50/lpa5104/align/consensus/masked_consensus.bam", checkIfExists: true),
+                    file("${projectDir}/data/barcode50/lpa5104/align/consensus/masked_consensus.bam.bai", checkIfExists: true),
+                    file("${projectDir}/data/variant_calling/NO_FILE/NO_FILE.txt", checkIfExists: true)
+                ],
+                [
+                    "barcode50",
+                    "lpa2645",
+                    file("${projectDir}/data/barcode50/lpa2645/align/consensus/masked_consensus.bam", checkIfExists: true),
+                    file("${projectDir}/data/barcode50/lpa2645/align/consensus/masked_consensus.bam.bai", checkIfExists: true),
+                    file("${projectDir}/data/variant_calling/NO_FILE/NO_FILE.txt", checkIfExists: true)
+                ]
+                )
+                input[1] = file("${projectDir}/bin/extract_haplotypes.py", checkIfExists: true)
+                """
+            }
+        }
+    }
+
+    test("MERGE_HAPLOTYPES with lpa5104 data") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    "barcode50", "lpa5104",
+                    file("${projectDir}/tests/input/merge_haplotypes/5104/haplotypes_filtered.fastq", checkIfExists: true)
+                ]
+                input[1] = file("${projectDir}/bin/merge_haplotypes.py", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def sequences = path(process.out.merged_haplotypes.get(0).get(2)).fasta
+            assert sequences.size() == 36
+            snapshot(process.out.get(2)).match()
+
+        }
+    }
+
+    test("MERGE_HAPLOTYPES with lpa2645 data") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    "barcode50", "lpa2645",
+                    file("${projectDir}/tests/input/merge_haplotypes/2645/haplotypes_filtered.fastq", checkIfExists: true)
+                ]
+                input[1] = file("${projectDir}/bin/merge_haplotypes.py", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def sequences = path(process.out.merged_haplotypes.get(0).get(2)).fasta
+            assert sequences.size() == 18
+            snapshot(process.out.get(2)).match()
+        }
+    }
+
+    test("MERGE_HAPLOTYPES from pre processed haplotypes") {
+
+        when {
+            process {
+                """
+                input[0] = EXTRACT_HAPLOTYPES.out.extracted_haplotypes
+                input[1] = file("${projectDir}/bin/merge_haplotypes.py", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            // Sort by region (position 1 in tuple) to ensure consistent order
+            def sorted_output = process.out.merged_haplotypes.toSorted { a, b ->
+                a[1] <=> b[1]
+            }
+            with(sorted_output) {
+                assert size() == 2
+                // First should be lpa2645 (alphabetically first)
+                with(get(0)) {
+                    assert get(0) == "barcode50"
+                    assert get(1) == "lpa2645"
+                    assert path(get(2)).fasta.size() == 18
+                }
+                // Second should be lpa5104 (alphabetically second)
+                with(get(1)) {
+                    assert get(0) == "barcode50"
+                    assert get(1) == "lpa5104"
+                    assert path(get(2)).fasta.size() == 38
+                }
+            }
+        }
+    }
+
+}
