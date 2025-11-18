@@ -15,7 +15,7 @@ haplotyping-KIV2-nf Pipeline
 To run the haplotyping workflow, execute the following command:
 
 ```bash
-nextflow run AmstlerStephan/haplotyping-KIV2-nf -r v0.1.1 -c <custom.config> -profile <docker/conda>
+nextflow run AmstlerStephan/haplotyping-KIV2-nf -r v0.2.0 -c <custom.config> -profile <docker/conda>
 ```
 
 Replace `<path_to_input_directory>` and `<path_to_output_directory>` with the actual paths.
