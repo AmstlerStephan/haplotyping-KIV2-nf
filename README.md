@@ -15,7 +15,7 @@ haplotyping-KIV2-nf Pipeline
 To run the haplotyping workflow, execute the following command:
 
 ```bash
-nextflow run AmstlerStephan/haplotyping-KIV2-nf -r v0.1.1 -c <custom.config> -profile <docker/conda> 
+nextflow run AmstlerStephan/haplotyping-KIV2-nf -r v0.1.1 -c <custom.config> -profile <docker/conda>
 ```
 
 Replace `<path_to_input_directory>` and `<path_to_output_directory>` with the actual paths.
@@ -46,9 +46,9 @@ Replace `<path_to_input_directory>` and `<path_to_output_directory>` with the ac
 ### Basic Parameters
 
 - **help**: A boolean flag indicating whether to display help information. Default is `false`.
-  
+
 - **version**: A boolean flag indicating whether to display the workflow version. Default is `false`.
-  
+
 - **debug**: A boolean flag enabling or disabling debug mode. When set to `true`, additional debugging information may be provided during workflow execution. Default is `false`.
 
 ### Input/Output Parameters
@@ -73,7 +73,21 @@ Replace `<path_to_input_directory>` and `<path_to_output_directory>` with the ac
 
 - **use_variant_calling_positions**: A boolean flag indicating whether to use variant calling positions. If `true`, the workflow considers the `variant_calling_positions` file.
 
-- **ranges_to_exclude**: A comma-separated list of ranges to exclude during processing. Default is `"2472,2506"`.
+- **region_exclusion_ranges**: A map defining region-specific exclusion ranges. Each region can have its own exclusion ranges or none at all. Example:
+  ```groovy
+  region_exclusion_ranges = [
+      "lpa2645": "",              // No positions to exclude
+      "lpa5104": "2472,2506"      // Exclude positions 2472-2506
+  ]
+  ```
+
+- **region_variant_calling_positions**: A map defining region-specific variant calling position files. Each region can have its own variant calling positions file or none at all. Example:
+  ```groovy
+  region_variant_calling_positions = [
+      "lpa2645": "",                              // No variant calling positions file
+      "lpa5104": "data/positions_lpa5104.tsv"    // Use specific file for lpa5104
+  ]
+  ```
 
 - **min_qscore**: The minimum quality score required during processing. Default is `45`.
 

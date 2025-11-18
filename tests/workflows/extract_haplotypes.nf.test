@@ -1,0 +1,86 @@
+nextflow_workflow {
+
+    name "Test Workflow EXTRACT_HAPLOTYPES_WF"
+    script "workflows/extract_haplotypes.nf"
+    workflow "EXTRACT_HAPLOTYPES_WF"
+
+    tag "workflows"
+
+    test("EXTRACT_HAPLOTYPES_WF with test data without variant calling positions") {
+
+        setup {
+            params {
+                input = "${projectDir}/data"
+                output = "output"
+                min_reads_per_cluster = 6
+                max_reads_per_cluster = 40
+                min_qscore = 60
+                variant_cutoff = 0.0085
+                output_format = "fastq"
+                use_variant_calling_positions = false
+                region_exclusion_ranges = [
+                    lpa2645: "",
+                    lpa5104: ""
+                ]
+            }
+        }
+
+        when {
+            workflow {
+                """
+                // No input parameters needed as workflow gets them from params
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+            //returns a list containing succeeded tasks
+            assert workflow.trace.succeeded().size() == 30
+
+            //returns a list containing failed tasks
+            assert workflow.trace.failed().size() == 0
+        }
+    }
+
+    test("EXTRACT_HAPLOTYPES_WF with variant calling positions enabled") {
+
+        setup {
+            params {
+                input = "${projectDir}/data"
+                output = "output"
+                min_reads_per_cluster = 6
+                max_reads_per_cluster = 40
+                min_qscore = 45
+                variant_cutoff = 0.0085
+                output_format = "fastq"
+                use_variant_calling_positions = true
+                region_exclusion_ranges = [
+                    lpa2645: "",
+                    lpa5104: ""
+                ]
+                region_variant_calling_positions = [
+                    lpa2645: "${projectDir}/data/variant_calling/2645/variant_calling_positions/positions_2645_MAF2.tsv",
+                    lpa5104: "${projectDir}/data/variant_calling/5104/variant_calling_positions/positions_5104_MAF2.tsv",
+                ]
+            }
+        }
+
+        when {
+            workflow {
+                """
+                // No input parameters needed
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+            //returns a list containing succeeded tasks
+            assert workflow.trace.succeeded().size() == 30
+
+            //returns a list containing failed tasks
+            assert workflow.trace.failed().size() == 0
+        }
+    }
+}

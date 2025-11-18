@@ -1,0 +1,138 @@
+{
+    "EXTRACT_HAPLOTYPES with lpa5104 data using no variant calling positions": {
+        "content": [
+            {
+                "0": [
+                    [
+                        "barcode50",
+                        "lpa5104",
+                        "haplotypes_filtered.fastq:md5,5c97b4075db3618a4eb171482095df5c"
+                    ]
+                ],
+                "1": [
+                    "haplotypes.fastq:md5,db6be4db8593a686cbf65f935b2bdf4e"
+                ],
+                "2": [
+                    [
+                        "haplotype_stats.tsv:md5,691fe8c499d3c6cef4aa2900558680e9",
+                        "haplotypes_filtered_stats.tsv:md5,21d5b834ccc31f2b3fc8b24f2b97a4a7"
+                    ]
+                ],
+                "extracted_haplotypes": [
+                    [
+                        "barcode50",
+                        "lpa5104",
+                        "haplotypes_filtered.fastq:md5,5c97b4075db3618a4eb171482095df5c"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "25.04.8"
+        },
+        "timestamp": "2025-10-30T09:58:52.901000686"
+    },
+    "EXTRACT_HAPLOTYPES with lpa5104 data using variant calling positions": {
+        "content": [
+            {
+                "0": [
+                    [
+                        "barcode50",
+                        "lpa5104",
+                        "haplotypes_filtered.fastq:md5,18950aa2818df721360f1ffd4b1fcb5c"
+                    ]
+                ],
+                "1": [
+                    "haplotypes.fastq:md5,e3a2dd3e47e28494292784ced1446adb"
+                ],
+                "2": [
+                    [
+                        "haplotype_stats.tsv:md5,cd7c9ae8de8ecc71d577f7f184b26506",
+                        "haplotypes_filtered_stats.tsv:md5,8e45018b4e7121b6055617442e9be162"
+                    ]
+                ],
+                "extracted_haplotypes": [
+                    [
+                        "barcode50",
+                        "lpa5104",
+                        "haplotypes_filtered.fastq:md5,18950aa2818df721360f1ffd4b1fcb5c"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "25.04.8"
+        },
+        "timestamp": "2025-10-21T17:02:19.390253946"
+    },
+    "EXTRACT_HAPLOTYPES with lpa2645 data with no variant calling positions": {
+        "content": [
+            {
+                "0": [
+                    [
+                        "barcode50",
+                        "lpa2645",
+                        "haplotypes_filtered.fastq:md5,81958e11d5cc7d44eba5ed9c9758f06d"
+                    ]
+                ],
+                "1": [
+                    "haplotypes.fastq:md5,81958e11d5cc7d44eba5ed9c9758f06d"
+                ],
+                "2": [
+                    [
+                        "haplotype_stats.tsv:md5,3e0989ca56555953fd81a3355f1e6578",
+                        "haplotypes_filtered_stats.tsv:md5,3e0989ca56555953fd81a3355f1e6578"
+                    ]
+                ],
+                "extracted_haplotypes": [
+                    [
+                        "barcode50",
+                        "lpa2645",
+                        "haplotypes_filtered.fastq:md5,81958e11d5cc7d44eba5ed9c9758f06d"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "25.04.8"
+        },
+        "timestamp": "2025-10-30T10:00:22.580318164"
+    },
+    "EXTRACT_HAPLOTYPES with lpa2645 data with variant calling positions": {
+        "content": [
+            {
+                "0": [
+                    [
+                        "barcode50",
+                        "lpa2645",
+                        "haplotypes_filtered.fastq:md5,c6351ab54c858f294675ef58b7d725d4"
+                    ]
+                ],
+                "1": [
+                    "haplotypes.fastq:md5,c6351ab54c858f294675ef58b7d725d4"
+                ],
+                "2": [
+                    [
+                        "haplotype_stats.tsv:md5,607e974de0ed11a32073c0b7086388c9",
+                        "haplotypes_filtered_stats.tsv:md5,607e974de0ed11a32073c0b7086388c9"
+                    ]
+                ],
+                "extracted_haplotypes": [
+                    [
+                        "barcode50",
+                        "lpa2645",
+                        "haplotypes_filtered.fastq:md5,c6351ab54c858f294675ef58b7d725d4"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "25.04.8"
+        },
+        "timestamp": "2025-10-30T10:00:54.60186218"
+    }
+}

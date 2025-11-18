@@ -1,0 +1,83 @@
+{
+    "FILTER_BAM with lpa2645 data": {
+        "content": [
+            {
+                "0": [
+                    [
+                        "barcode50",
+                        "lpa2645",
+                        "filtered_bam.bam:md5,902b5fc875651c89a48dbe198b6690a3",
+                        "filtered_bam.bam.bai:md5,c6add23032b344d509e5c6d165ca15b9"
+                    ]
+                ],
+                "filtered_bam": [
+                    [
+                        "barcode50",
+                        "lpa2645",
+                        "filtered_bam.bam:md5,902b5fc875651c89a48dbe198b6690a3",
+                        "filtered_bam.bam.bai:md5,c6add23032b344d509e5c6d165ca15b9"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "25.04.8"
+        },
+        "timestamp": "2025-10-21T14:08:51.613721836"
+    },
+    "FILTER_BAM with minimal cluster size": {
+        "content": [
+            {
+                "0": [
+                    [
+                        "barcode50",
+                        "lpa5104",
+                        "filtered_bam.bam:md5,1a68a75a4a70ec4c0acae594cd814b4a",
+                        "filtered_bam.bam.bai:md5,ba1e989c9fdccee98e28f23e8f822cb5"
+                    ]
+                ],
+                "filtered_bam": [
+                    [
+                        "barcode50",
+                        "lpa5104",
+                        "filtered_bam.bam:md5,1a68a75a4a70ec4c0acae594cd814b4a",
+                        "filtered_bam.bam.bai:md5,ba1e989c9fdccee98e28f23e8f822cb5"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "25.04.8"
+        },
+        "timestamp": "2025-10-21T14:09:06.541085581"
+    },
+    "FILTER_BAM with lpa5104 data": {
+        "content": [
+            {
+                "0": [
+                    [
+                        "barcode50",
+                        "lpa5104",
+                        "filtered_bam.bam:md5,da4383a5a69fb4134bc9fed7888f24aa",
+                        "filtered_bam.bam.bai:md5,11e7f5c5dd1d7ef496787810743da2f1"
+                    ]
+                ],
+                "filtered_bam": [
+                    [
+                        "barcode50",
+                        "lpa5104",
+                        "filtered_bam.bam:md5,da4383a5a69fb4134bc9fed7888f24aa",
+                        "filtered_bam.bam.bai:md5,11e7f5c5dd1d7ef496787810743da2f1"
+                    ]
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "25.04.8"
+        },
+        "timestamp": "2025-10-21T14:08:30.627902863"
+    }
+}
