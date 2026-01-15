@@ -112,6 +112,9 @@ def get_clusters(cluster_stats_file, min_cluster_size, max_cluster_size):
                                            (cluster_stats["reads_written_fwd"] + cluster_stats["reads_written_rev"] >= min_cluster_size) &
                                            (cluster_stats["reads_found"] <= max_cluster_size)].copy()
 
+    # replace _subn and with _0 to match read names in bam
+    cluster_stats_filtered["cluster_id"] = cluster_stats_filtered["cluster_id"].apply(lambda x: re.sub(r'_sub\d+', '_0', x))
+
     cluster_stats_filtered_parsed = cluster_stats_filtered["cluster_id"].to_list()
 
     return cluster_stats_filtered_parsed
