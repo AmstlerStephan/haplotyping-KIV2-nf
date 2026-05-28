@@ -315,11 +315,15 @@ def write_stat_file(haplotypes, output, file_name):
 
 def write_positions_file(haplotypes, output, file_name):
     haplotype_file = os.path.join(output, "{}.tsv".format(file_name))
+    positions = sorted({
+        position
+        for haplotype in haplotypes.values()
+        for position in haplotype.get("position", [])
+    })
     with open(haplotype_file, "w") as out_f:
-        print("haplotype\tpositions", file=out_f)
-        for haplotype_name in haplotypes:
-            positions = get_string(haplotypes[haplotype_name].get("position"), ",")
-            print("{}\t{}".format(haplotype_name, positions), file=out_f)
+        print("position", file=out_f)
+        for position in positions:
+            print(position, file=out_f)
 
 def get_stats(haplotypes):
     position_stats = dict()
