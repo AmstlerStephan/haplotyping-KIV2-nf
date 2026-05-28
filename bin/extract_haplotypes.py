@@ -38,49 +38,49 @@ def parse_args(argv):
         help="Print debug information",
     )
     parser.add_argument(
-        "--bam_file", 
-        dest="BAM_FILE", 
-        type=str, 
-        required=True, 
+        "--bam_file",
+        dest="BAM_FILE",
+        type=str,
+        required=True,
         help="input bam file to extract haplotypes from"
     )
     parser.add_argument(
-        "--output_format", 
-        dest="OUTPUT_FORMAT", 
-        type=str, 
+        "--output_format",
+        dest="OUTPUT_FORMAT",
+        type=str,
         default="fasta",
         help="Output format of the haplotypes"
     )
     parser.add_argument(
-        "--variant_calling_positions", 
-        dest="VARIANT_CALLING_POSITIONS", 
-        type=str, 
+        "--variant_calling_positions",
+        dest="VARIANT_CALLING_POSITIONS",
+        type=str,
         help="File with all positions from variant calling (column name must be 'position')"
     )
     parser.add_argument(
-        "--use_variant_calling_positions", 
-        dest="USE_VARIANT_CALLING_POSITIONS", 
-        action="store_true", 
+        "--use_variant_calling_positions",
+        dest="USE_VARIANT_CALLING_POSITIONS",
+        action="store_true",
         help="Use positions from variant calling"
     )
     parser.add_argument(
-        "-o", 
-        "--output", 
-        dest="OUTPUT", 
-        required=True, 
+        "-o",
+        "--output",
+        dest="OUTPUT",
+        required=True,
         help="Output folder"
     )
     parser.add_argument(
-        "--filter_haplotypes", 
-        dest="FILTER_HAPLOTYPES", 
+        "--filter_haplotypes",
+        dest="FILTER_HAPLOTYPES",
         default=True,
-        action="store_true", 
+        action="store_true",
         help="Filter Haplotypes"
     )
     parser.add_argument(
-        "--hardmask", 
-        dest="HARDMASK", 
-        action="store_true", 
+        "--hardmask",
+        dest="HARDMASK",
+        action="store_true",
         help="Hardmask low quality bases"
     )
     parser.add_argument(
@@ -105,8 +105,8 @@ def parse_args(argv):
         default=0.0085,
         help="Cutoff to merge clusters",
     )
-    
-    
+
+
     args = parser.parse_args(argv)
 
     return args
@@ -135,17 +135,20 @@ def get_haplotypes(args):
     variant_cutoff = args.VARIANT_CUTOFF
     use_variant_calling_positions = args.USE_VARIANT_CALLING_POSITIONS
     variant_calling_positions = args.VARIANT_CALLING_POSITIONS
-    
+
     query_names = get_query_names(bam_file)
     haplotypes = get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_calling_positions, variant_calling_positions)
     write_haplotypes(haplotypes, output_format, output, "haplotypes")
     write_stat_file(haplotypes, output, "haplotype_stats")
-    
+
     if filter_haplotypes:
         filtered_haplotypes = get_filtered_haplotypes(haplotypes, min_qscore, ranges_to_exclude, hardmask)
         write_haplotypes(filtered_haplotypes, output_format, output, "haplotypes_filtered")
         write_stat_file(haplotypes, output, "haplotypes_filtered_stats")
-    
+        write_positions_file(filtered_haplotypes, output, "haplotypes_filtered_positions")
+    else:
+        write_positions_file(haplotypes, output, "haplotypes_positions")
+
 
 def get_query_names(bam_file):
     query_names = dict()
@@ -153,7 +156,7 @@ def get_query_names(bam_file):
         for read in samfile.fetch():
             query_names[read.query_name] = dict(
                 position = list(),
-                haplotype = list(), 
+                haplotype = list(),
                 quality = list())
     return query_names
 
@@ -161,9 +164,9 @@ def is_variant_position(pos, positions):
     return pos in positions
 
 
-# Takes all bases from the current line position and counts number of bases that occur in that column 
-# If there are no more than one type of base occuring, the position is not polymorphic and the bases are returned 
-# Else if there are more than one type of bases it will check whether the variant base occurs more often than the set threshold 
+# Takes all bases from the current line position and counts number of bases that occur in that column
+# If there are no more than one type of base occuring, the position is not polymorphic and the bases are returned
+# Else if there are more than one type of bases it will check whether the variant base occurs more often than the set threshold
 # if so then the position is polymorphic
 def is_polymorphic_position(pileup_column, variant_cutoff):
     variants = dict()
@@ -172,13 +175,13 @@ def is_polymorphic_position(pileup_column, variant_cutoff):
     ## will not include the information about the next position
     bases = pileup_column.get_query_sequences(add_indels = True)
     n_bases = len(bases)
-    
+
     for base in bases:
         if base in variants:
             variants[base] += 1
-        else: 
+        else:
             variants[base] = 1
-    
+
     if len(variants) > 1:
         is_polymorphic = sum(1 for base in variants if variants[base] / n_bases >= variant_cutoff) >= 2
         # is_polymorphic = all(variants[base] / n_bases >= variant_cutoff for base in variants)
@@ -196,25 +199,25 @@ def is_polymorphic_position(pileup_column, variant_cutoff):
 
 def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_calling_positions, variant_calling_positions):
     with pysam.AlignmentFile(bam_file, "rb") as samfile:
-        
+
         # Put here to load positions only once
         if use_variant_calling_positions:
             positions = pd.read_csv(variant_calling_positions, sep = "\t")["position"].to_list()
-        
+
         # loop over columns of bam_file
         for pileup_column in samfile.pileup(min_base_quality = 0):
             # python is zero-based
             pos = pileup_column.reference_pos + 1
             polymorphic, variant = is_polymorphic_position(pileup_column, variant_cutoff)
-            
+
             if use_variant_calling_positions and is_variant_position(pos, positions):
-                    
+
                 for pileup_read in pileup_column.pileups:
-                    
+
                     read = pileup_read.alignment
                     name = read.query_name
                     read_pos = pileup_read.query_position
-                                        
+
                     if not(polymorphic):
                         base = variant
                         if pileup_read.is_del:
@@ -230,8 +233,8 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                         base = read.query_sequence[read_pos]
                         qual = read.query_qualities[read_pos]
 
-                    query_names[name]["haplotype"].append(base) 
-                    query_names[name]["quality"].append(qual) 
+                    query_names[name]["haplotype"].append(base)
+                    query_names[name]["quality"].append(qual)
                     query_names[name]["position"].append(pos)
 
             elif polymorphic and not(use_variant_calling_positions):
@@ -245,15 +248,15 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                     if pileup_read.indel >= 1:
                         indel_start = read_pos
                         indel_end = read_pos + pileup_read.indel + 1
-                        
+
                         bases = read.query_sequence[indel_start:indel_end]
                         quals = read.query_qualities[indel_start:indel_end]
-                        
+
                         query_names[name]["haplotype"].append(bases)
                         query_names[name]["quality"].append(quals)
                         query_names[name]["position"].append(pos)
                         continue
-                    
+
                     # deletion is annotated as - and qual set to 70 (might adjust)
                     if pileup_read.is_del:
                         base = get_del()
@@ -261,9 +264,9 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                     else:
                         base = read.query_sequence[read_pos]
                         qual = read.query_qualities[read_pos]
-                        
-                    query_names[name]["haplotype"].append(base) 
-                    query_names[name]["quality"].append(qual) 
+
+                    query_names[name]["haplotype"].append(base)
+                    query_names[name]["quality"].append(qual)
                     query_names[name]["position"].append(pos)
 
     return query_names
@@ -275,7 +278,7 @@ def get_filtered_haplotypes(haplotypes, min_qscore, regions_to_exclude, hardmask
         for position in positions:
             i = haplotypes[haplotype_name].get("position").index(position)
             qual = get_quality(haplotypes[haplotype_name].get("quality")[i])
-            
+
             if exclude_pos(position, regions_to_exclude):
                 haplotypes[haplotype_name]["position"].pop(i)
                 haplotypes[haplotype_name]["haplotype"].pop(i)
@@ -287,9 +290,9 @@ def get_filtered_haplotypes(haplotypes, min_qscore, regions_to_exclude, hardmask
             #        base = haplotypes[haplotype_name]["haplotype"][i]
             #        masked_base = base.lower()
             #        haplotypes[haplotype_name]["haplotype"][i] = masked_base
-                
+
     return haplotypes
-            
+
 def write_haplotypes(haplotypes, output_format, output, file_name):
     haplotype_file = os.path.join(output, "{}.{}".format(file_name, output_format))
     with open(haplotype_file, "w") as out_f:
@@ -309,7 +312,19 @@ def write_stat_file(haplotypes, output, file_name):
         for pos in stats:
             for base in stats[pos]:
                 print("{}\t{}\t{}".format(pos, base, stats[pos][base]), file=out_f)
-            
+
+def write_positions_file(haplotypes, output, file_name):
+    haplotype_file = os.path.join(output, "{}.tsv".format(file_name))
+    positions = sorted({
+        position
+        for haplotype in haplotypes.values()
+        for position in haplotype.get("position", [])
+    })
+    with open(haplotype_file, "w") as out_f:
+        print("position", file=out_f)
+        for position in positions:
+            print(position, file=out_f)
+
 def get_stats(haplotypes):
     position_stats = dict()
     for haplotype_name in haplotypes:
@@ -324,9 +339,9 @@ def get_stats(haplotypes):
             else:
                 position_stats[pos] = dict()
                 position_stats[pos][base] = 1
-                
+
     return position_stats
-    
+
 def write_fastq_read(read_name, read_seq, read_qual, out_f):
     print("@{}".format(read_name), file=out_f)
     print("{}".format(read_seq), file=out_f)
@@ -349,8 +364,8 @@ def get_quality_string(qualities, sep):
             continue
         else:
             qualities_parsed.append(chr(qual + 33))
-                    
-    return get_string(qualities_parsed, sep) 
+
+    return get_string(qualities_parsed, sep)
 
 def get_quality(qual):
     if not isinstance(qual, int):
