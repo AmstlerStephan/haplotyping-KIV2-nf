@@ -18,6 +18,11 @@
                         "haplotypes_filtered_stats.tsv:md5,21d5b834ccc31f2b3fc8b24f2b97a4a7"
                     ]
                 ],
+                "3": [
+                    [
+                        "haplotypes_filtered_positions.tsv:md5,TO_BE_UPDATED"
+                    ]
+                ],
                 "extracted_haplotypes": [
                     [
                         "barcode50",
@@ -50,6 +55,11 @@
                     [
                         "haplotype_stats.tsv:md5,cd7c9ae8de8ecc71d577f7f184b26506",
                         "haplotypes_filtered_stats.tsv:md5,8e45018b4e7121b6055617442e9be162"
+                    ]
+                ],
+                "3": [
+                    [
+                        "haplotypes_filtered_positions.tsv:md5,TO_BE_UPDATED"
                     ]
                 ],
                 "extracted_haplotypes": [
@@ -86,6 +96,11 @@
                         "haplotypes_filtered_stats.tsv:md5,3e0989ca56555953fd81a3355f1e6578"
                     ]
                 ],
+                "3": [
+                    [
+                        "haplotypes_filtered_positions.tsv:md5,TO_BE_UPDATED"
+                    ]
+                ],
                 "extracted_haplotypes": [
                     [
                         "barcode50",
@@ -118,6 +133,11 @@
                     [
                         "haplotype_stats.tsv:md5,607e974de0ed11a32073c0b7086388c9",
                         "haplotypes_filtered_stats.tsv:md5,607e974de0ed11a32073c0b7086388c9"
+                    ]
+                ],
+                "3": [
+                    [
+                        "haplotypes_filtered_positions.tsv:md5,TO_BE_UPDATED"
                     ]
                 ],
                 "extracted_haplotypes": [
