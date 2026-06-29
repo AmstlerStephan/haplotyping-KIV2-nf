@@ -1,9 +1,9 @@
 nextflow.enable.dsl = 2
 
-include { EXTRACT_HAPLOTYPES } from '../modules/local/extract_haplotypes.nf'
-include { MERGE_HAPLOTYPES   } from '../modules/local/merge_haplotypes.nf'
-include { MULTIPLE_ALIGNMENT } from '../modules/local/multiple_alignment.nf'
-include { FILTER_BAM         } from '../modules/local/filter_bam.nf'
+include { EXTRACT_HAPLOTYPES               } from '../modules/local/extract_haplotypes.nf'
+include { MERGE_AND_RECONSTRUCT_HAPLOTYPES } from '../modules/local/merge_and_reconstruct_haplotypes.nf'
+include { MULTIPLE_ALIGNMENT               } from '../modules/local/multiple_alignment.nf'
+include { FILTER_BAM                       } from '../modules/local/filter_bam.nf'
 
 workflow EXTRACT_HAPLOTYPES_WF {
 
@@ -12,26 +12,29 @@ workflow EXTRACT_HAPLOTYPES_WF {
 
   // scripts
   extract_haplotypes_py = file("${projectDir}/bin/extract_haplotypes.py", checkIfExists: true)
-  merge_haplotypes_py = file("${projectDir}/bin/merge_haplotypes.py", checkIfExists: true)
+  merge_and_reconstruct_haplotypes_py = file("${projectDir}/bin/merge_and_reconstruct_haplotypes.py", checkIfExists: true)
   filter_bam_py = file("${projectDir}/bin/filter_bam.py", checkIfExists: true)
 
 
   // Input channels - process all regions
-  bam_files = Channel.fromPath("${params.input}/barcode*/*/align/consensus/${params.bam_pattern}", type: "file")
+  bam_files = Channel
+    .fromPath("${params.input}/barcode*/*/align/consensus/${params.bam_pattern}", type: "file")
     .map { file ->
       def barcode = file.parent.parent.parent.parent.name
       def region = file.parent.parent.parent.name
       tuple(barcode, region, file)
     }
 
-  bam_file_indexes = Channel.fromPath("${params.input}/barcode*/*/align/consensus/${params.bam_pattern}.bai", type: "file")
+  bam_file_indexes = Channel
+    .fromPath("${params.input}/barcode*/*/align/consensus/${params.bam_pattern}.bai", type: "file")
     .map { file ->
       def barcode = file.parent.parent.parent.parent.name
       def region = file.parent.parent.parent.name
       tuple(barcode, region, file)
     }
 
-  cluster_stats = Channel.fromPath("${params.input}/barcode*/*/stats/raw/${params.cluster_stats_pattern}")
+  cluster_stats = Channel
+    .fromPath("${params.input}/barcode*/*/stats/raw/${params.cluster_stats_pattern}")
     .map { file ->
       def barcode = file.parent.parent.parent.parent.name
       def region = file.parent.parent.parent.name
@@ -61,5 +64,21 @@ workflow EXTRACT_HAPLOTYPES_WF {
 
   extracted_haplotypes_filtered = EXTRACT_HAPLOTYPES.out.extracted_haplotypes.filter { _barcode, _region, fasta_file -> fasta_file.countFasta() >= 1 }
 
-  MERGE_HAPLOTYPES(extracted_haplotypes_filtered, merge_haplotypes_py)
+  // Prepare inputs for fused merge+reconstruct process:
+  // Join extracted haplotypes with their polymorphic positions and region reference.
+  haplotypes_with_positions_and_ref = extracted_haplotypes_filtered
+    .join(EXTRACT_HAPLOTYPES.out.positions, by: [0, 1])
+    .map { sample, region, haplotypes, positions ->
+      def region_ref = params.region_references?.get(region) ?: ""
+      def ref_file = region_ref && !region_ref.isEmpty()
+        ? file(region_ref, checkIfExists: true)
+        : file("${projectDir}/data/variant_calling/NO_FILE/NO_FILE.txt", checkIfExists: true)
+      tuple(sample, region, haplotypes, positions, ref_file)
+    }
+
+  // Fused process: merge haplotypes AND reconstruct full-length sequences in one pass
+  MERGE_AND_RECONSTRUCT_HAPLOTYPES(haplotypes_with_positions_and_ref, merge_and_reconstruct_haplotypes_py)
+
+  // Feed reconstructed sequences into MULTIPLE_ALIGNMENT
+  MULTIPLE_ALIGNMENT(MERGE_AND_RECONSTRUCT_HAPLOTYPES.out.reconstructed_haplotypes)
 }

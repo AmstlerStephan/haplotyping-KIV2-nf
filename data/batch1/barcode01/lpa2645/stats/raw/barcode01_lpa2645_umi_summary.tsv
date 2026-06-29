@@ -1,0 +1,5 @@
+sample	target	metric	count	percent
+barcode01	lpa2645	detected_forward_strands	117100	50.84
+barcode01	lpa2645	detected_reverse_strands	113233	49.16
+barcode01	lpa2645	total_reads	230333	100.00
+barcode01	lpa2645	included_reads	219734	95.40

@@ -1,0 +1,10 @@
+sample	target	metric	count	percent
+barcode01	lpa2645	reads_found	253741	100.00
+barcode01	lpa2645	reads_unmapped	0	0.00
+barcode01	lpa2645	reads_secondary	0	0.00
+barcode01	lpa2645	reads_supplementary	11167	4.40
+barcode01	lpa2645	reads_on_target	242574	95.60
+barcode01	lpa2645	reads_concatamer	6381	2.51
+barcode01	lpa2645	reads_short	4143	1.63
+barcode01	lpa2645	reads_long	28	0.01
+barcode01	lpa2645	reads_filtered	232022	91.44

@@ -202,7 +202,7 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
 
         # Put here to load positions only once
         if use_variant_calling_positions:
-            positions = pd.read_csv(variant_calling_positions, sep = "\t")["position"].to_list()
+            positions = set(pd.read_csv(variant_calling_positions, sep = "\t")["position"].to_list())
 
         # loop over columns of bam_file
         for pileup_column in samfile.pileup(min_base_quality = 0):

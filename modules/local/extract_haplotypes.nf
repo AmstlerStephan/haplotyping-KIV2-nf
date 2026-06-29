@@ -10,6 +10,7 @@ process EXTRACT_HAPLOTYPES {
 
   output:
   tuple val("${sample}"), val("${region}"), path("haplotypes_filtered.${params.output_format}"), emit: extracted_haplotypes
+  tuple val("${sample}"), val("${region}"), path("haplotypes_filtered_positions.tsv"), emit: positions
   path "haplotypes.${params.output_format}"
   path "*stats.tsv"
   path "*positions.tsv"

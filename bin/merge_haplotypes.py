@@ -40,16 +40,16 @@ def parse_args(argv):
         help="Print debug information",
     )
     parser.add_argument(
-        "--fastx_file", 
-        dest="FASTX_FILE", 
-        type=str, 
-        required=True, 
+        "--fastx_file",
+        dest="FASTX_FILE",
+        type=str,
+        required=True,
         help="input fastx file to extract haplotypes from"
     )
     parser.add_argument(
-        "--output_format", 
-        dest="OUTPUT_FORMAT", 
-        type=str, 
+        "--output_format",
+        dest="OUTPUT_FORMAT",
+        type=str,
         default="fasta",
         help="Output format of the haplotypes"
     )
@@ -68,13 +68,13 @@ def parse_args(argv):
         help="Cutoff to merge clusters",
     )
     parser.add_argument(
-        "-o", 
-        "--output", 
+        "-o",
+        "--output",
         dest="OUTPUT",
         default="./",
         help="Output folder"
     )
-    
+
     args = parser.parse_args(argv)
 
     return args
@@ -86,108 +86,168 @@ def get_merged_haplotypes(args):
     output = args.OUTPUT
     variant_cutoff = args.VARIANT_CUTOFF
     max_edit_distance = args.MAX_EDIT_DISTANCE
-    queries_left = True
-    max_dist = 1
     stats_file_name = "merged_haplotype_log"
     stats_file_path = os.path.join(output, "{}.tsv".format(stats_file_name))
-    
+
     # write first line of log
     with open(stats_file_path, "w") as stats_file:
         print("sequence\tquery_sequence\tquery_size\tedist\tposition\tbase\tquery_base\tchange\tmax_dist\tcluster_cutoff\tvariant_cutoff\tn_unique_sequences", file = stats_file)
-    
+
     unique_sequences = get_unique_sequences(fasta_file)
     write_haplotypes(unique_sequences, output_format, output, "unique_haplotypes")
     write_subreads(unique_sequences, output_format, output, "unique_haplotypes_subreads")
-    
-    # Think about how to treat max distance and cluster cutoff! may add <and max_dist < 3>
-    while queries_left and max_dist <= max_edit_distance:
-        merged_sequences, queries_left = get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path)
-        max_dist += 1
+
+    # Precompute all pairwise distances once (distance matrix caching)
+    distance_matrix = compute_distance_matrix(unique_sequences, max_edit_distance)
+
+    # Iteratively merge using precomputed distances
+    merged_sequences = unique_sequences.copy()
+    for max_dist in range(1, max_edit_distance + 1):
+        close_sequences = find_merges_from_matrix(
+            merged_sequences, distance_matrix, variant_cutoff, max_dist, stats_file_path)
+        if not close_sequences:
+            break
+        merged_sequences = merge_sequences(merged_sequences, close_sequences)
+        # Update distance matrix for merged sequences
+        distance_matrix = update_distance_matrix(
+            merged_sequences, distance_matrix, close_sequences, max_edit_distance)
+
     write_haplotypes(merged_sequences, output_format, output, "merged_haplotypes")
     write_haplotype_stats(merged_sequences, output, "merged_haplotype_stats")
 
-def get_merged_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
-    close_sequences = find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path)
-    unique_sequences = merge_sequences(unique_sequences, close_sequences)
-    return unique_sequences, len(close_sequences) >= 1
+def compute_distance_matrix(unique_sequences, max_edit_distance):
+    """
+    Precompute all pairwise edit distances up to max_edit_distance.
+    Returns a nested dict: {seq1: {seq2: edit_distance}}
+    Only computes upper triangle (seq1 < seq2 lexicographically).
+    """
+    distance_matrix = {}
+    sequences = list(unique_sequences.keys())
 
-def merge_sequences(unique_sequences, close_sequences):
+    for i, seq1 in enumerate(sequences):
+        distance_matrix[seq1] = {}
+        for seq2 in sequences[i + 1:]:
+            result = edlib.align(
+                seq1, seq2,
+                mode="NW",
+                task="path",
+                k=max_edit_distance
+            )
+            distance_matrix[seq1][seq2] = result
+
+    return distance_matrix
+
+def update_distance_matrix(merged_sequences, distance_matrix, close_sequences, max_edit_distance):
+    """
+    Remove merged sequences from matrix and add distances for new merged sequences.
+    Called after each merge iteration.
+    """
+    # Remove deleted sequences from matrix
     for sequence, queries in close_sequences.items():
         for query in queries:
-            unique_sequences[sequence]["reads"] = Merge(unique_sequences[sequence]["reads"], unique_sequences[query]["reads"])
-    
+            if query in distance_matrix:
+                del distance_matrix[query]
+            for key in distance_matrix:
+                if query in distance_matrix[key]:
+                    del distance_matrix[key][query]
+
+    return distance_matrix
+
+def find_merges_from_matrix(merged_sequences, distance_matrix, variant_cutoff, max_dist, stats_file_path):
+    """
+    Find merge candidates using precomputed distance matrix.
+    Only look at distances == max_dist in this iteration.
+    """
+    n_total_sequences = get_number_of_sequences(merged_sequences)
+    cluster_cutoff = round(variant_cutoff * n_total_sequences)
+    close_sequences = dict()
+
+    for sequence, info in merged_sequences.items():
+        n_sequences = len(info["reads"])
+        is_bigger_than_cluster_cutoff = n_sequences > cluster_cutoff
+        is_high_qual = info["high_qual"]
+
+        if not (is_bigger_than_cluster_cutoff or is_high_qual):
+            continue
+
+        for query_sequence, query_info in merged_sequences.items():
+            if query_sequence == sequence:
+                continue
+
+            n_queries = len(query_info["reads"])
+            is_smaller_than_cluster_cutoff = n_queries <= cluster_cutoff
+
+            if not is_smaller_than_cluster_cutoff:
+                continue
+
+            # Fetch precomputed distance from matrix (with order invariance)
+            if sequence in distance_matrix and query_sequence in distance_matrix[sequence]:
+                result = distance_matrix[sequence][query_sequence]
+            elif query_sequence in distance_matrix and sequence in distance_matrix[query_sequence]:
+                result = distance_matrix[query_sequence][sequence]
+            else:
+                # Distance not precomputed; compute it now
+                result = edlib.align(
+                    sequence, query_sequence,
+                    mode="NW", task="path", k=max_dist
+                )
+
+            # Only use if edit distance exactly equals current max_dist threshold
+            if result.get("editDistance", float('inf')) == max_dist:
+                if sequence in close_sequences:
+                    close_sequences[sequence].append(query_sequence)
+                else:
+                    close_sequences[sequence] = [query_sequence]
+                write_merge_log(sequence, query_sequence, n_queries, result, max_dist,
+                               cluster_cutoff, variant_cutoff, n_total_sequences, stats_file_path)
+
+    return close_sequences
+
+
+def merge_sequences(unique_sequences, close_sequences):
+    """Merge close sequences into representative sequences, aggregating reads."""
+    for sequence, queries in close_sequences.items():
+        for query in queries:
+            unique_sequences[sequence]["reads"] = Merge(
+                unique_sequences[sequence]["reads"],
+                unique_sequences[query]["reads"]
+            )
+
     for sequence, queries in close_sequences.items():
         for query in queries:
             if query in unique_sequences:
                 unique_sequences.pop(query)
-    
+
     return unique_sequences
 
+
 def get_number_of_sequences(unique_sequences):
+    """Count total number of reads across all sequences."""
     n_sequences = 0
     for sequence in unique_sequences.values():
         n_sequences += len(sequence["reads"])
     return n_sequences
 
-def find_closest_sequences(unique_sequences, variant_cutoff, max_dist, stats_file_path):
-    n_total_sequences = get_number_of_sequences(unique_sequences)
-    # For maximal number of KIV-2 repeats: 80 (0.0125)
-    # Change back to variant_cutoff!
-    # variant_cutoff = 0.0125
-    cluster_cutoff = round(variant_cutoff  * n_total_sequences)
-    close_sequences = dict()
-    for sequence, info in unique_sequences.items():
-        
-        n_sequences = len(info["reads"])
-        is_bigger_than_cluster_cutoff = n_sequences > cluster_cutoff
-        is_high_qual = info["high_qual"]
-        
-        if is_bigger_than_cluster_cutoff | is_high_qual:
-            for query_sequence, query_info in unique_sequences.items():
-                if query_sequence == sequence:
-                    continue
-                
-                n_queries = len(query_info["reads"])
-                is_smaller_than_cluster_cutoff = n_queries <= cluster_cutoff
-                is_low_qual = True
-                # is_low_qual = not query_info["high_qual"]
-                
-                if is_low_qual and is_smaller_than_cluster_cutoff:
-                    ### check for edit distance calculation!
-                    result = edlib.align(
-                        sequence, 
-                        query_sequence, 
-                        mode="NW", 
-                        task="path",
-                        k=max_dist
-                    )
-                    # print("{} sequence has {} distance to\n{}".format(sequence, result["editDistance"], query_sequence))
-                    if result["editDistance"] > 0:
-                        if sequence in close_sequences:
-                            close_sequences[sequence].append(query_sequence)
-                        else:
-                            close_sequences[sequence] = [query_sequence]
-                        write_merge_log(sequence, query_sequence, n_queries, result, max_dist, cluster_cutoff, variant_cutoff, n_total_sequences, stats_file_path)
-    return close_sequences
 
-   
 def get_unique_sequences(fasta_file):
+    """Extract unique sequences and track quality and read membership."""
     unique_sequences = dict()
-    
+
     with pysam.FastxFile(fasta_file) as reads:
         for read in reads:
             unmasked_sequence = read.sequence.upper()
             high_qual = all(base.isupper() for base in read.sequence)
-            # n_low_qual = sum(base.isupper() for base in read.sequence)
             if unmasked_sequence in unique_sequences:
                 unique_sequences[unmasked_sequence]["reads"][read.name] = read.sequence
             else:
                 unique_sequences[unmasked_sequence] = dict()
                 unique_sequences[unmasked_sequence]["reads"] = dict()
                 unique_sequences[unmasked_sequence]["reads"][read.name] = read.sequence
-                
+
             unique_sequences[unmasked_sequence]["high_qual"] = high_qual
     return unique_sequences
+
+
 
 
 def write_subreads(unique_reads, output_format, output, file_name):
@@ -198,7 +258,7 @@ def write_subreads(unique_reads, output_format, output, file_name):
                 name = "{}_{}".format(i, sub_name)
                 write_fasta_read(name, sub_sequence, out_f)
 
-                    
+
 def write_haplotypes(haplotypes, output_format, output, file_name):
     haplotype_file = os.path.join(output, "{}.fasta".format(file_name))
     with open(haplotype_file, "w") as out_f:
@@ -207,7 +267,7 @@ def write_haplotypes(haplotypes, output_format, output, file_name):
             high_qual = haplotypes[sequence]["high_qual"]
             unique_identifier = uuid.uuid4()
             name = "{},size={},high_qual={},uuid={}".format(i, n_reads, high_qual, unique_identifier)
-            write_fasta_read(name, sequence, out_f) 
+            write_fasta_read(name, sequence, out_f)
 
 
 def write_fastq_read(read_name, read_seq, read_qual, out_f):
@@ -233,14 +293,14 @@ def write_merge_log(sequence, query_sequence, n_queries, result, max_dist, clust
     edist = result["editDistance"]
     cigar = result["cigar"]
     with open(stats_file_path, "a+") as stats_file:
-        for difference in re.findall('\d*=..', cigar):
+        for difference in re.findall(r'\d*=..', cigar):
             change = difference.split("=")[1]
-            n_bases = int(re.findall("\d*", change)[0])
+            n_bases = int(re.findall(r"\d*", change)[0])
             pos = int(difference.split("=")[0])
             base = sequence[pos:pos+n_bases]
             query_base = query_sequence[pos:pos+n_bases]
             print("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(
-                sequence, 
+                sequence,
                 query_sequence,
                 n_queries,
                 edist,
@@ -256,9 +316,21 @@ def write_merge_log(sequence, query_sequence, n_queries, result, max_dist, clust
 
 
 
+def write_cluster_assignment(haplotypes, output, file_name):
+    """Write a TSV mapping every read name to its merged cluster ID."""
+    assignment_file = os.path.join(output, "{}.tsv".format(file_name))
+    with open(assignment_file, "w") as out_f:
+        print("read_name\tcluster_id\tcluster_size\thigh_qual", file=out_f)
+        for i, (sequence, info) in enumerate(haplotypes.items()):
+            n_reads = len(info["reads"])
+            high_qual = info["high_qual"]
+            for read_name in info["reads"]:
+                print("{}\t{}\t{}\t{}".format(read_name, i, n_reads, high_qual), file=out_f)
+
+
 def write_haplotype_stats(merged_sequences, output, file_name):
     haplotype_stats_file = os.path.join(output, "{}.tsv".format(file_name))
-    
+
     with open(haplotype_stats_file, "w") as out_f:
         print("haplotype\thaplotype_occurences\thigh_qual\thaplotype_length", file=out_f)
         for sequence, info in merged_sequences.items():
