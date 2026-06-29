@@ -298,12 +298,12 @@ def write_haplotype_stats(merged_sequences, output):
 # ============================================================================
 
 def merge_and_reconstruct(args):
-    # Guard: skip if no reference configured
+    # Full-length reconstruction requires a valid reference sequence.
     if os.path.basename(args.REFERENCE) == "NO_FILE.txt":
-        logging.warning("No reference sequence configured for this region -- skipping.")
-        open(os.path.join(args.OUTPUT, "merged_haplotypes.fasta"), "w").close()
-        open(os.path.join(args.OUTPUT, "reconstructed_haplotypes.fasta"), "w").close()
-        return
+        raise ValueError(
+            "Full-length reconstruction requires a region reference FASTA. "
+            "Please set params.region_references for this region."
+        )
 
     # Load data once
     reference = read_reference(args.REFERENCE)

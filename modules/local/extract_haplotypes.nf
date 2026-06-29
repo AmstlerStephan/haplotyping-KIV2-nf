@@ -5,7 +5,7 @@ process EXTRACT_HAPLOTYPES {
   publishDir "${params.output}/${sample}/${region}/stats/", mode: 'copy', pattern: "*positions.tsv"
 
   input:
-  tuple val(sample), val(region), path(bam_file), path(bam_file_index), path(variant_calling_positions)
+  tuple val(sample), val(region), path(bam_file), path(bam_file_index), val(variant_calling_positions)
   path extract_haplotypes_py
 
   output:
@@ -22,11 +22,11 @@ process EXTRACT_HAPLOTYPES {
   def exclusion_ranges = params.region_exclusion_ranges?.get(region) ?: ""
   def ranges_arg = exclusion_ranges && !exclusion_ranges.isEmpty() ? "--ranges_to_exclude ${exclusion_ranges}" : ""
 
-  // Get region-specific variant calling positions
-  def variant_positions_file = params.region_variant_calling_positions?.get(region) ?: ""
-  def use_variant_positions = variant_positions_file && !variant_positions_file.isEmpty() && params.use_variant_calling_positions
+  // variant_calling_positions is optional and only required when
+  // use_variant_calling_positions=true.
+  def use_variant_positions = variant_calling_positions && !variant_calling_positions.isEmpty() && params.use_variant_calling_positions
   def use_variant_calling_positions = use_variant_positions ? "--use_variant_calling_positions" : ""
-  def variant_calling_positions_arg = use_variant_positions ? "--variant_calling_positions ${variant_calling_positions}" : ""
+  def variant_calling_positions_arg = use_variant_positions ? "--variant_calling_positions ${file(variant_calling_positions, checkIfExists: true)}" : ""
   """
     python ${extract_haplotypes_py} \\
         --bam_file ${bam_file} \\

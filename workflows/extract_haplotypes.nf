@@ -51,12 +51,17 @@ workflow EXTRACT_HAPLOTYPES_WF {
   // Process workflow
   FILTER_BAM(bam_stats_tuples, filter_bam_py)
 
-  // Add region-specific variant positions file to all filtered BAM samples
+  // Add optional region-specific variant positions file to filtered BAM samples.
+  // When use_variant_calling_positions=false, pass an empty string and let
+  // EXTRACT_HAPLOTYPES discover polymorphic sites directly from the BAM.
   bam_with_variant_positions = FILTER_BAM.out.filtered_bam.map { sample, region, bam, bai ->
     def region_variant_file = params.region_variant_calling_positions?.get(region) ?: ""
-    def variant_file = region_variant_file && !region_variant_file.isEmpty() && params.use_variant_calling_positions
-      ? file(region_variant_file, checkIfExists: true)
-      : file("${projectDir}/data/variant_calling/NO_FILE/NO_FILE.txt", checkIfExists: true)
+    def variant_file = params.use_variant_calling_positions ? region_variant_file : ""
+
+    if (params.use_variant_calling_positions && (!variant_file || variant_file.isEmpty())) {
+      throw new IllegalArgumentException("Missing region_variant_calling_positions entry for region '${region}' while use_variant_calling_positions=true")
+    }
+
     tuple(sample, region, bam, bai, variant_file)
   }
 
@@ -70,9 +75,10 @@ workflow EXTRACT_HAPLOTYPES_WF {
     .join(EXTRACT_HAPLOTYPES.out.positions, by: [0, 1])
     .map { sample, region, haplotypes, positions ->
       def region_ref = params.region_references?.get(region) ?: ""
-      def ref_file = region_ref && !region_ref.isEmpty()
-        ? file(region_ref, checkIfExists: true)
-        : file("${projectDir}/data/variant_calling/NO_FILE/NO_FILE.txt", checkIfExists: true)
+      if (!region_ref || region_ref.isEmpty()) {
+        throw new IllegalArgumentException("Missing region_references entry for region '${region}' required for full sequence reconstruction")
+      }
+      def ref_file = file(region_ref, checkIfExists: true)
       tuple(sample, region, haplotypes, positions, ref_file)
     }
 
