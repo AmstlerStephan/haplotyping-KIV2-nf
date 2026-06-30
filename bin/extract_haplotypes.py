@@ -245,11 +245,13 @@ def get_extracted_haplotypes(bam_file, query_names, variant_cutoff, use_variant_
                     read_pos = pileup_read.query_position
 
                     # in case of indel a list is returned and joined with the existing list
-                    if pileup_read.indel >= 1:
-                        indel_start = read_pos
-                        indel_end = read_pos + pileup_read.indel + 1
+                    # the first base is upper case and the rest lowercase to indicate that they are part of the indel
+                    if pileup_read.indel <= -1:
+                        indel_start = read_pos + pileup_read.indel
+                        indel_end = read_pos + 1
 
                         bases = read.query_sequence[indel_start:indel_end]
+                        bases = bases[0] + bases[1:].lower()
                         quals = read.query_qualities[indel_start:indel_end]
 
                         query_names[name]["haplotype"].append(bases)

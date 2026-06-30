@@ -13,8 +13,11 @@ Outputs:
 
 import argparse
 import logging
+from operator import add
 import os
+import re
 import sys
+from turtle import pos
 import uuid
 
 import pysam
@@ -101,15 +104,16 @@ def get_unique_sequences(fasta_file):
     unique_sequences = dict()
     with pysam.FastxFile(fasta_file) as reads:
         for read in reads:
-            unmasked_sequence = read.sequence.upper()
+
+            sequence = read.sequence
             high_qual = all(base.isupper() for base in read.sequence)
-            if unmasked_sequence in unique_sequences:
-                unique_sequences[unmasked_sequence]["reads"][read.name] = read.sequence
+            if sequence in unique_sequences:
+                unique_sequences[sequence]["reads"][read.name] = read.sequence
             else:
-                unique_sequences[unmasked_sequence] = dict()
-                unique_sequences[unmasked_sequence]["reads"] = dict()
-                unique_sequences[unmasked_sequence]["reads"][read.name] = read.sequence
-            unique_sequences[unmasked_sequence]["high_qual"] = high_qual
+                unique_sequences[sequence] = dict()
+                unique_sequences[sequence]["reads"] = dict()
+                unique_sequences[sequence]["reads"][read.name] = read.sequence
+            unique_sequences[sequence]["high_qual"] = high_qual
     return unique_sequences
 
 
@@ -126,7 +130,7 @@ def compute_distance_matrix(unique_sequences, max_edit_distance):
         distance_matrix[seq1] = {}
         for seq2 in sequences[i + 1:]:
             result = edlib.align(
-                seq1, seq2, mode="NW", task="path", k=max_edit_distance
+                seq1, seq2, mode="NW", task="path", k=max_edit_distance, additionalEqualities=[("A", "a"), ("C", "c"), ("G", "g"), ("T", "t"), ("-", "A"), ("-", "C"), ("-", "G"), ("-", "T"), ("-", "a"), ("-", "c"), ("-", "g"), ("-", "t")]
             )
             distance_matrix[seq1][seq2] = result
     return distance_matrix
@@ -155,7 +159,7 @@ def find_merges_from_matrix(merged_sequences, distance_matrix, variant_cutoff, m
         is_bigger_than_cluster_cutoff = n_sequences > cluster_cutoff
         is_high_qual = info["high_qual"]
 
-        if not (is_bigger_than_cluster_cutoff or is_high_qual):
+        if not (is_bigger_than_cluster_cutoff):
             continue
 
         for query_sequence, query_info in merged_sequences.items():
@@ -175,7 +179,7 @@ def find_merges_from_matrix(merged_sequences, distance_matrix, variant_cutoff, m
                 result = distance_matrix[query_sequence][sequence]
             else:
                 result = edlib.align(
-                    sequence, query_sequence, mode="NW", task="path", k=max_dist
+                    sequence, query_sequence, mode="NW", task="path", k=max_dist, additionalEqualities=[("A", "a"), ("C", "c"), ("G", "g"), ("T", "t"), ("-", "A"), ("-", "C"), ("-", "G"), ("-", "T"), ("-", "a"), ("-", "c"), ("-", "g"), ("-", "t")]
                 )
 
             if result.get("editDistance", float('inf')) == max_dist:
@@ -254,29 +258,32 @@ def read_positions(positions_tsv):
 
 def apply_haplotype(reference, positions, fingerprint, reference_start):
     """Reconstruct full-length sequence by applying polymorphic positions."""
-    if len(fingerprint) != len(positions):
-        raise ValueError(
-            "Fingerprint length ({}) != number of positions ({})" .format(
-                len(fingerprint), len(positions)))
-
     offset = reference_start - 1
     ref_list = list(reference)
-    deletion_indices = set()
+    shift = 0
 
-    for allele, ref_pos in zip(fingerprint, positions):
-        idx = ref_pos - 1 - offset
-        if idx < 0 or idx >= len(ref_list):
-            raise IndexError(
-                "Position {} maps to index {} outside reference (length {})".format(
-                    ref_pos, idx, len(ref_list)))
+    for index in range(len(positions)):
+        fingerprint_index = index + shift
+        allele = fingerprint[fingerprint_index]
+        ref_pos = positions[index]
+        ref_idx = ref_pos - 1 - offset
 
+        # find indels by checking if the next base in the fingerprint is lower case, if so, it is part of an indel and all lower bases should be added at this position
+        if fingerprint_index + 1 < len(fingerprint) and fingerprint[fingerprint_index + 1].islower():
+            while fingerprint_index + 1 < len(fingerprint) and fingerprint[fingerprint_index + 1].islower():
+                fingerprint_index += 1
+                shift += 1
+                allele += fingerprint[fingerprint_index]
+            ref_list[ref_idx] = allele
         if allele == "-":
-            deletion_indices.add(idx)
+            # deletion_indices.add(ref_idx)
+            ref_list[ref_idx] = ""
         else:
-            ref_list[idx] = allele
+            ref_list[ref_idx] = allele
 
-    return "".join(base for i, base in enumerate(ref_list)
-                   if i not in deletion_indices)
+    reconstructed = "".join(ref_list)
+    return reconstructed
+
 
 
 def write_haplotype_stats(merged_sequences, output):
