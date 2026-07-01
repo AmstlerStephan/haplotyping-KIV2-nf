@@ -86,5 +86,8 @@ workflow EXTRACT_HAPLOTYPES_WF {
   MERGE_AND_RECONSTRUCT_HAPLOTYPES(haplotypes_with_positions_and_ref, merge_and_reconstruct_haplotypes_py)
 
   // Feed reconstructed sequences into MULTIPLE_ALIGNMENT
-  MULTIPLE_ALIGNMENT(MERGE_AND_RECONSTRUCT_HAPLOTYPES.out.reconstructed_haplotypes)
+
+  if (params.perform_multiple_alignment) {
+    MULTIPLE_ALIGNMENT(MERGE_AND_RECONSTRUCT_HAPLOTYPES.out.reconstructed_haplotypes)
+  }
 }

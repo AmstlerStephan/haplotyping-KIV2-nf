@@ -88,6 +88,12 @@
                     "maximum": 1,
                     "description": "Variant frequency cutoff",
                     "fa_icon": "fas fa-percentage"
+                },
+                "perform_multiple_alignment": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable multiple sequence alignment of reconstructed haplotypes",
+                    "fa_icon": "fas fa-align-justify"
                 }
             }
         },
